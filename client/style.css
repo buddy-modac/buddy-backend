@@ -10,6 +10,9 @@ body {
   padding: 16px;
 }
 
+.hidden { display: none !important; }
+
+/* ── 공통 카드 ── */
 .card {
   background: #fff;
   border-radius: 20px;
@@ -20,15 +23,114 @@ body {
   text-align: center;
 }
 
-.hidden { display: none !important; }
-
 h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
-.subtitle { color: #666; font-size: 0.95rem; margin-bottom: 32px; }
 
-/* 시작 화면 */
-.emoji { font-size: 3rem; margin-bottom: 16px; }
+/* ── 허브 페이지 ── */
+.hub {
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
-/* 퀴즈 화면 */
+.hub-header {
+  text-align: center;
+}
+
+.emoji { font-size: 3rem; margin-bottom: 12px; }
+
+.subtitle { color: #666; font-size: 0.95rem; margin-top: 4px; }
+
+.hub-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hub-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.hub-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.hub-card--primary {
+  background: #4a90e2;
+  color: #fff;
+}
+
+.hub-card--secondary {
+  background: #fff;
+  color: #333;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.hub-card__icon { font-size: 1.8rem; flex-shrink: 0; }
+
+.hub-card__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hub-card__content strong { font-size: 1rem; font-weight: 700; }
+.hub-card__content span { font-size: 0.82rem; opacity: 0.75; }
+
+.hub-card__arrow { font-size: 1.4rem; opacity: 0.5; flex-shrink: 0; }
+
+/* 랜덤 결과 */
+.random-result {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.random-result__mbti {
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #4a90e2;
+  margin-bottom: 16px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.btn-text:hover { text-decoration: underline; }
+
+/* ── 퀴즈 페이지 ── */
+.back-link {
+  display: inline-block;
+  color: #999;
+  font-size: 0.85rem;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+
+.back-link:hover { color: #4a90e2; }
+
 .progress {
   font-size: 0.8rem;
   color: #999;
@@ -65,10 +167,9 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
 .option-btn:hover {
   background: #e8f0fe;
   border-color: #4a90e2;
-  color: #1a1a2e;
 }
 
-/* 결과 화면 */
+/* ── 결과 화면 ── */
 .mbti-display {
   font-size: 4rem;
   font-weight: 800;
@@ -80,18 +181,19 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
 .scores {
   font-size: 0.85rem;
   color: #666;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .score-row { margin-bottom: 4px; }
 
-.note {
-  font-size: 0.75rem;
-  color: #aaa;
-  margin-top: 8px;
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
 }
 
-/* 공통 버튼 */
+/* ── 공통 버튼 ── */
 .btn-primary {
   background: #4a90e2;
   color: #fff;
@@ -106,18 +208,10 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
 
 .btn-primary:hover { background: #357abd; }
 
-/* 에러 화면 */
-.error-msg {
-  color: #e74c3c;
+.btn-secondary {
+  color: #999;
   font-size: 0.9rem;
-  margin: 16px 0 24px;
-  word-break: break-all;
+  text-decoration: none;
 }
 
-/* API 주소 표시 */
-.api-info {
-  font-size: 0.75rem;
-  color: #bbb;
-  margin-top: 24px;
-  word-break: break-all;
-}
+.btn-secondary:hover { color: #4a90e2; }

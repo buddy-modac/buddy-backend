@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy — MBTI 테스트</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 퀴즈 화면 -->
+  <div id="screen-quiz" class="card">
+    <a href="index.html" class="back-link">← 돌아가기</a>
+    <p class="progress" id="progress">1 / 12</p>
+    <p class="question-text" id="question-text"></p>
+    <div class="options" id="options"></div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="screen-result" class="card hidden">
+    <h1>당신의 유형은</h1>
+    <div class="mbti-display" id="mbti-result"></div>
+    <div class="scores" id="scores"></div>
+    <div class="result-actions">
+      <button id="btn-retry" class="btn-primary">다시하기</button>
+      <a href="index.html" class="btn-secondary">처음으로</a>
+    </div>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="quiz.js"></script>
+</body>
+</html>
