@@ -1,4 +1,5 @@
 // 백엔드 서버 주소 — 로컬 테스트 시 'http://localhost:8000', 배포 서버로 변경 시 여기만 수정
+// ⚠️ GitHub Pages(https)에서 사용할 때는 배포 서버도 반드시 https 주소여야 혼합 콘텐츠 차단을 피할 수 있음
 const API_BASE_URL = 'http://localhost:8000';
 
 let allQuestions = [];  // [{id, question, options: [{text, type}]}, ...]
@@ -71,20 +72,35 @@ function selectAnswer(questionId, type) {
 
 // 답변 제출 → 결과 수신
 async function submitAnswers() {
+  let res;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/result`, {
+    res = await fetch(`${API_BASE_URL}/api/result`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ answers }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    showResult(data);
-  } catch (err) {
-    // 백엔드 result API 미구현 시 프론트에서 직접 계산
+  } catch {
+    // 네트워크 오류(서버 미실행) → 로컬 계산 fallback
     const mbti = calcMbtiLocal();
-    showResult({ mbti, note: '(로컬 계산 — 백엔드 /api/result 미연결)' });
+    showResult({ mbti, note: '(로컬 계산 — 서버에 연결할 수 없음)' });
+    return;
   }
+
+  // 404/501: 엔드포인트 미구현 → 로컬 계산 fallback
+  if (res.status === 404 || res.status === 501) {
+    const mbti = calcMbtiLocal();
+    showResult({ mbti, note: '(로컬 계산 — 백엔드 /api/result 미구현)' });
+    return;
+  }
+
+  // 그 외 HTTP 오류(400, 422, 500 등) → 에러 화면으로 표시
+  if (!res.ok) {
+    showError(`결과 조회 실패: HTTP ${res.status}`);
+    return;
+  }
+
+  const data = await res.json();
+  showResult(data);
 }
 
 // 백엔드 없이 로컬에서 MBTI 계산 (fallback)
@@ -111,13 +127,14 @@ function showResult(data) {
   document.getElementById('mbti-result').textContent = data.mbti ?? '??';
 
   const scoresEl = document.getElementById('scores');
+  scoresEl.innerHTML = '';
   if (data.scores) {
-    scoresEl.innerHTML = Object.entries(data.scores)
-      .map(([axis, counts]) =>
-        `<div class="score-row">${Object.entries(counts).map(([t, n]) => `${t}: ${n}`).join(' / ')}</div>`
-      ).join('');
-  } else {
-    scoresEl.innerHTML = '';
+    Object.entries(data.scores).forEach(([, counts]) => {
+      const row = document.createElement('div');
+      row.className = 'score-row';
+      row.textContent = Object.entries(counts).map(([t, n]) => `${t}: ${n}`).join(' / ');
+      scoresEl.appendChild(row);
+    });
   }
 
   if (data.note) {

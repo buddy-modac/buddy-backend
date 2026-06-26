@@ -49,7 +49,8 @@ FastAPI 서버를 **바로바로 테스트**할 수 있는 단일 페이지 UI.
 
 [결과 화면]
   → MBTI 4글자 크게 표시
-  → 각 축 점수 표시 (E:2 / I:1 등)
+  → 각 축 점수 표시 (E:2 / I:1 등) — 백엔드가 scores 필드를 내려줄 때만 표시
+    (로컬 계산 fallback 경로에서는 scores 미제공이므로 점수 표시 없음)
   → 다시하기 버튼
 ```
 
@@ -61,6 +62,7 @@ FastAPI 서버를 **바로바로 테스트**할 수 있는 단일 페이지 UI.
 ```js
 // 로컬 테스트: 'http://localhost:8000'
 // 서버 배포 후: 실제 서버 주소로 변경
+// ⚠️ GitHub Pages(https)에서 사용할 때는 배포 서버도 https 주소여야 함 (mixed content 차단)
 const API_BASE_URL = 'http://localhost:8000';
 ```
 
@@ -86,9 +88,11 @@ const API_BASE_URL = 'http://localhost:8000';
 
 ```
 push to main
-  → GitHub Actions: client/ 폴더를 gh-pages 브랜치에 업로드
-  → GitHub Pages가 정적 파일 서빙
+  → GitHub Actions: client/ 폴더를 artifact로 업로드
+  → GitHub 공식 deploy-pages 액션이 Pages에 배포
 ```
+
+GitHub 공식 액션(`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages`)을 사용해 서드파티 의존성 없이 배포.
 
 ### 배포 결과 URL
 
@@ -97,7 +101,7 @@ https://buddy-modac.github.io/buddy-backend/
 ```
 
 > ⚠️ GitHub Pages 활성화는 repo Settings → Pages에서 직접 설정 필요
-> (Source: Deploy from a branch → gh-pages / root)
+> (Source: **GitHub Actions** 선택 — "Deploy from a branch" 아님)
 
 ---
 
