@@ -85,7 +85,7 @@ const QUESTIONS = {
 const AXIS_ORDER = ['EI', 'SN', 'TF', 'PJ'];
 
 function getAllQuestions() {
-  return AXIS_ORDER.flatMap(cat => QUESTIONS[cat]);
+  return AXIS_ORDER.flatMap(cat => QUESTIONS[cat] ?? []);
 }
 
 function calcMbti(answers) {

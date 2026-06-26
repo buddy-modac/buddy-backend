@@ -9,6 +9,11 @@ function showScreen(name) {
 
 function renderQuestion() {
   const q = allQuestions[currentIndex];
+  if (!q) {
+    document.getElementById('question-text').textContent = '질문을 불러올 수 없어요.';
+    document.getElementById('options').innerHTML = '';
+    return;
+  }
   document.getElementById('progress').textContent = `${currentIndex + 1} / ${allQuestions.length}`;
   document.getElementById('question-text').textContent = q.question;
 
