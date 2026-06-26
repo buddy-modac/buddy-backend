@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy — MBTI 테스트</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- 시작 화면 -->
+  <div id="screen-start" class="card">
+    <div class="emoji">🤝</div>
+    <h1>Buddy MBTI</h1>
+    <p class="subtitle">나와 잘 맞는 버디를 찾아보세요</p>
+    <button id="btn-start" class="btn-primary">테스트 시작</button>
+    <p class="api-info" id="api-info"></p>
+  </div>
+
+  <!-- 퀴즈 화면 -->
+  <div id="screen-quiz" class="card hidden">
+    <p class="progress" id="progress">1 / 12</p>
+    <p class="question-text" id="question-text"></p>
+    <div class="options" id="options"></div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="screen-result" class="card hidden">
+    <h1>당신의 유형은</h1>
+    <div class="mbti-display" id="mbti-result">ENFP</div>
+    <div class="scores" id="scores"></div>
+    <button id="btn-retry" class="btn-primary">다시하기</button>
+  </div>
+
+  <!-- 에러 화면 -->
+  <div id="screen-error" class="card hidden">
+    <div class="emoji">⚠️</div>
+    <h1>연결 오류</h1>
+    <p class="error-msg" id="error-message"></p>
+    <button id="btn-error-retry" class="btn-primary">돌아가기</button>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // 현재 연결 중인 API 주소 표시
+    document.getElementById('api-info').textContent = `API: ${API_BASE_URL}`;
+  </script>
+</body>
+</html>
