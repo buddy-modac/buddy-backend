@@ -28,7 +28,7 @@
       </a>
 
       <!-- 랜덤 뽑기 -->
-      <button class="hub-card hub-card--secondary" id="btn-random">
+      <button type="button" class="hub-card hub-card--secondary" id="btn-random">
         <div class="hub-card__icon">🎲</div>
         <div class="hub-card__content">
           <strong>랜덤 뽑기</strong>
@@ -41,8 +41,8 @@
 
     <!-- 랜덤 결과 표시 영역 -->
     <div id="random-result" class="random-result hidden">
-      <div class="random-result__mbti" id="random-mbti"></div>
-      <button class="btn-text" id="btn-random-again">다시 뽑기 🎲</button>
+      <div class="random-result__mbti" id="random-mbti" aria-live="polite"></div>
+      <button type="button" class="btn-text" id="btn-random-again">다시 뽑기 🎲</button>
     </div>
   </div>
 

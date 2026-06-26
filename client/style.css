@@ -62,9 +62,12 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
   transition: transform 0.12s, box-shadow 0.12s;
 }
 
-.hub-card:hover {
+.hub-card:hover,
+.hub-card:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  outline: 3px solid #4a90e2;
+  outline-offset: 2px;
 }
 
 .hub-card--primary {
@@ -118,7 +121,8 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
   padding: 4px 8px;
 }
 
-.btn-text:hover { text-decoration: underline; }
+.btn-text:hover,
+.btn-text:focus-visible { text-decoration: underline; outline: 2px solid #4a90e2; outline-offset: 2px; }
 
 /* ── 퀴즈 페이지 ── */
 .back-link {
@@ -129,7 +133,8 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
   margin-bottom: 20px;
 }
 
-.back-link:hover { color: #4a90e2; }
+.back-link:hover,
+.back-link:focus-visible { color: #4a90e2; outline: 2px solid #4a90e2; outline-offset: 2px; }
 
 .progress {
   font-size: 0.8rem;
@@ -206,7 +211,8 @@ h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
   transition: background 0.15s;
 }
 
-.btn-primary:hover { background: #357abd; }
+.btn-primary:hover,
+.btn-primary:focus-visible { background: #357abd; outline: 3px solid #4a90e2; outline-offset: 2px; }
 
 .btn-secondary {
   color: #999;

@@ -100,7 +100,7 @@ function calcMbti(answers) {
 }
 
 function randomMbti() {
-  return ['EI', 'SN', 'TF', 'PJ']
+  return AXIS_ORDER
     .map(axis => axis[Math.floor(Math.random() * 2)])
     .join('');
 }
