@@ -1,0 +1,7 @@
+{
+  "id": "sample-translate",
+  "action": "translate",
+  "imagePath": "../images/sample-screen.png",
+  "targetLanguage": "ko",
+  "ocrText": "Welcome back\nEmail address\nPassword\nSign in\nForgot password?\nInvalid password. Please try again."
+}
