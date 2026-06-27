@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MBTI 퀴즈 — 테스트</title>
+<style>
+  :root{--bg:#0f1420;--card:#1a2030;--line:#2a3346;--txt:#e6edf3;--mut:#8b97a7;
+        --acc:#5b9dff;--ok:#3fb37f;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+       background:var(--bg);color:var(--txt);display:flex;flex-direction:column;
+       align-items:center;min-height:100vh}
+  header{width:100%;padding:12px 20px;border-bottom:1px solid var(--line);display:flex;
+         align-items:center;gap:12px}
+  header h1{font-size:16px;margin:0}
+  .pill{font-size:12px;padding:3px 9px;border-radius:20px;background:#243049;color:var(--mut)}
+  a{color:var(--acc)}
+  .wrap{width:100%;max-width:560px;padding:24px 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px;margin-bottom:16px}
+  .prog{height:8px;background:#2a3346;border-radius:5px;overflow:hidden;margin-bottom:6px}
+  .prog>i{display:block;height:100%;background:var(--acc);transition:width .25s}
+  .progtxt{font-size:12px;color:var(--mut);margin-bottom:16px}
+  .q{font-size:18px;font-weight:600;margin:6px 0 18px;line-height:1.45}
+  .opt{display:block;width:100%;text-align:left;background:#0d1220;border:1px solid var(--line);
+       color:var(--txt);border-radius:10px;padding:14px 16px;margin:10px 0;font-size:15px;
+       cursor:pointer;transition:.12s}
+  .opt:hover{border-color:var(--acc);background:#141b2e}
+  .opt .v{float:right;color:var(--mut);font-size:12px}
+  input{background:#0d1220;border:1px solid var(--line);color:var(--txt);border-radius:8px;
+        padding:10px 12px;font-size:14px;width:100%}
+  button.go{background:var(--acc);color:#fff;border:0;padding:12px 18px;border-radius:9px;
+            font-size:15px;font-weight:600;cursor:pointer;margin-top:12px;width:100%}
+  button.ghost{background:#243049;border:1px solid var(--line);color:var(--mut);
+               border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px}
+  .result{text-align:center;padding:10px 0}
+  .mbti{font-size:54px;font-weight:800;letter-spacing:3px;color:var(--ok);margin:8px 0}
+  .scores{display:flex;flex-direction:column;gap:8px;margin:18px 0;text-align:left}
+  .axis{font-size:13px}
+  .axisbar{height:22px;background:#0d1220;border:1px solid var(--line);border-radius:6px;
+           display:flex;overflow:hidden;margin-top:3px}
+  .axisbar>div{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .err{color:#ff7a7a;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧭 MBTI 퀴즈 — 테스트</h1>
+  <span class="pill">localhost:8000/quiz-ui</span>
+  <span class="pill"><a href="/">→ 분석 콘솔</a></span>
+</header>
+
+<div class="wrap">
+  <div class="card" id="card">
+    <div id="intro">
+      <p style="color:var(--mut);font-size:14px">축마다 1문항씩(총 4문항) 랜덤 출제 → 결과 MBTI는
+      <a href="/">분석 콘솔</a>의 persona로 바로 쓸 수 있어요.</p>
+      <label style="font-size:12px;color:var(--mut)">닉네임 (선택)</label>
+      <input id="nick" placeholder="minsu" style="margin-top:4px">
+      <button class="go" id="startBtn">퀴즈 시작 ▶</button>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let sid=null, total=0;
+const card=document.getElementById('card');
+
+document.getElementById('startBtn').onclick=start;
+
+async function start(){
+  try{
+    const nick=document.getElementById('nick').value||null;
+    const d=await post('/quiz/start',{nickname:nick});
+    sid=d.session_id; total=d.total;
+    renderQ(d.question);
+  }catch(e){ document.getElementById('err').textContent='시작 실패: '+e.message; }
+}
+
+function renderQ(q){
+  const pct=Math.round(q.index/q.total*100);
+  card.innerHTML=`
+    <div class="prog"><i style="width:${pct}%"></i></div>
+    <div class="progtxt">${q.index+1} / ${q.total}</div>
+    <div class="q">${esc(q.text)}</div>
+    <div id="opts"></div>`;
+  q.options.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='opt';
+    b.innerHTML=`${esc(o.label)} <span class="v">${o.value}</span>`;
+    b.onclick=()=>answer(q.question_id,o.value);
+    card.querySelector('#opts').appendChild(b);
+  });
+}
+
+async function answer(qid,value){
+  // 클릭 잠금
+  card.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  try{
+    const d=await post('/quiz/answer',{session_id:sid,question_id:qid,value:value});
+    if(d.done) renderResult(d); else renderQ(d.question);
+  }catch(e){ card.querySelector('#opts').innerHTML+=`<div class="err">${e.message}</div>`; }
+}
+
+function renderResult(d){
+  const s=d.scores;
+  const axes=[['E','I','외향','내향'],['N','S','직관','감각'],['F','T','감정','사고'],['P','J','탐색','계획']];
+  let bars='';
+  axes.forEach(([a,b,la,lb])=>{
+    const av=s[a]||0, bv=s[b]||0, tot=Math.max(av+bv,1);
+    const ap=Math.round(av/tot*100), bp=100-ap;
+    bars+=`<div class="axis"><b>${a}</b> ${la} vs ${lb} <b>${b}</b>
+      <div class="axisbar">
+        <div style="width:${ap}%;background:#5b9dff">${ap?la+' '+av:''}</div>
+        <div style="width:${bp}%;background:#3a4456">${bp?lb+' '+bv:''}</div>
+      </div></div>`;
+  });
+  card.innerHTML=`
+    <div class="result">
+      <div style="color:var(--mut);font-size:13px">당신의 결과</div>
+      <div class="mbti">${d.result}</div>
+      <div class="scores">${bars}</div>
+      <a class="go" style="display:block;text-decoration:none;text-align:center"
+         href="/?persona=${d.result}">이 결과(${d.result})로 분석 콘솔 열기 →</a>
+      <button class="ghost" style="margin-top:10px" onclick="location.reload()">다시 풀기</button>
+    </div>`;
+}
+
+async function post(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.detail||JSON.stringify(d));
+  return d;
+}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
