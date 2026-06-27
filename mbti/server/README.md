@@ -58,6 +58,12 @@ export SERVER_AI_BACKEND=auto          # ./server/run.sh auto
 | GET | `/personas` | 16 MBTI + 말투 설명 |
 | GET | `/health` | 상태 + 현재 AI 백엔드 |
 | POST | `/quiz/start` · `/quiz/answer` · GET `/quiz/{id}` | MBTI 퀴즈 → 결과를 persona로 사용 |
+| POST | `/clipboard` | 이미지 업로드(공개). 멀티파트 `file=`(+`nickname=`) 또는 JSON `{image_b64, media_type, name, nickname}`. → `{id, url, nickname, ...}` |
+| GET | `/clipboard` | 업로드 목록(최신순). 각 항목에 바로 쓸 `url`·`nickname` 포함 |
+| GET | `/clipboard/{id}/raw` | 원본 이미지 바이트(+`Content-Type`). `?download=1`로 다운로드 |
+| DELETE | `/clipboard/{id}` | 삭제(공개) — 디스크 파일+메타 제거 |
+
+> 클립보드는 **공개**(인증·제한 없음). 바이트는 `server/uploads/`(gitignore)에 디스크 저장, 메타만 SQLite. `nickname`은 선택(없으면 null→UI '익명'), `uploader_ip`도 기록. UI: `/clipboard-ui`(갤러리) · `/admin` 클립보드 탭.
 
 ## reply 체인 흐름
 1. `POST /analyze` (conversation_id 없음) → `{id:1, conversation_id:"abc", parent_id:null}`
