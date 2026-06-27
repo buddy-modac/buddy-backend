@@ -41,6 +41,13 @@
            display:flex;overflow:hidden;margin-top:3px}
   .axisbar>div{display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
   .err{color:#ff7a7a;font-size:13px}
+  .compat{margin:18px 0;text-align:left}
+  .compat .ct{font-size:13px;color:var(--mut);margin-bottom:6px}
+  .crow{display:flex;gap:10px;align-items:baseline;padding:8px 11px;border:1px solid var(--line);
+        border-radius:8px;margin:6px 0;background:#0d1220}
+  .crow .rk{font-weight:800;color:var(--acc);min-width:16px}
+  .crow .tp{font-weight:700;color:var(--ok);min-width:46px;letter-spacing:1px}
+  .crow .ds{color:var(--mut);font-size:12.5px}
 </style>
 </head>
 <body>
@@ -116,11 +123,15 @@ function renderResult(d){
         <div style="width:${bp}%;background:#3a4456">${bp?lb+' '+bv:''}</div>
       </div></div>`;
   });
+  const comp=(d.compatibility||[]).map(c=>
+    `<div class="crow"><span class="rk">${c.rank}</span><span class="tp">${c.type}</span><span class="ds">${esc(c.desc)}</span></div>`).join('');
+  const compBlock=comp?`<div class="compat"><div class="ct">💞 궁합 좋은 MBTI Top 3</div>${comp}</div>`:'';
   card.innerHTML=`
     <div class="result">
       <div style="color:var(--mut);font-size:13px">당신의 결과</div>
       <div class="mbti">${d.result}</div>
       <div class="scores">${bars}</div>
+      ${compBlock}
       <a class="go" style="display:block;text-decoration:none;text-align:center"
          href="/?persona=${d.result}">이 결과(${d.result})로 분석 콘솔 열기 →</a>
       <button class="ghost" style="margin-top:10px" onclick="location.reload()">다시 풀기</button>

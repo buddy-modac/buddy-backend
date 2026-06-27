@@ -57,7 +57,7 @@ export SERVER_AI_BACKEND=auto          # ./server/run.sh auto
 | DELETE | `/message/{id}` | 삭제 (자식 parent_id는 NULL 정리) |
 | GET | `/personas` | 16 MBTI + 말투 설명 |
 | GET | `/health` | 상태 + 현재 AI 백엔드 |
-| POST | `/quiz/start` · `/quiz/answer` · GET `/quiz/{id}` | MBTI 퀴즈 → 결과를 persona로 사용 |
+| POST | `/quiz/start` · `/quiz/answer` · GET `/quiz/{id}` | MBTI 퀴즈 → 결과를 persona로 사용. 완료 응답에 `compatibility`(궁합 Top-3, 16personalities 기준) 포함 |
 | POST | `/clipboard` | 이미지 업로드(공개). 멀티파트 `file=`(+`nickname=`) 또는 JSON `{image_b64, media_type, name, nickname}`. → `{id, url, nickname, ...}` |
 | GET | `/clipboard` | 업로드 목록(최신순). 각 항목에 바로 쓸 `url`·`nickname` 포함 |
 | GET | `/clipboard/{id}/raw` | 원본 이미지 바이트(+`Content-Type`). `?download=1`로 다운로드 |
