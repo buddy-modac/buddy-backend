@@ -1,0 +1,20 @@
+{
+  "id": "kbs-wealth-ask",
+  "action": "ask",
+  "imagePath": "../images/kbs-wealth-gap.png",
+  "inputMode": "ocr-image",
+  "openaiImageDetail": "high",
+  "imageFidelity": "high",
+  "imageTextPolicy": "ocr_authoritative",
+  "question": "이미지 속 20대 상위 20%와 하위 20%의 평균 순자산은 각각 얼마이고, 몇 배 차이야? 세대별 자산 격차도 큰 순서대로 알려줘.",
+  "ocrText": "KBS 뉴스 기사 화면. 제목은 9년 치 통계 분석과 20대 자산 격차에 대한 내용이다. 본문에는 20대 내부의 자산 격차가 커졌다는 설명과 인터뷰 인용문이 보인다.",
+  "expectedFindings": [
+    { "label": "20대 상위 20% 평균 순자산", "anyOf": ["6억 3,199만", "6억3199만", "63199만"] },
+    { "label": "20대 하위 20% 평균 순자산", "anyOf": ["3,327만", "3327만"] },
+    { "label": "20대 격차 배율", "anyOf": ["19배"] },
+    { "label": "60대 이상 격차", "anyOf": ["60대 이상 10.5배", "60대이상10.5배", "10.5배"] },
+    { "label": "50대 격차", "anyOf": ["50대 8.5배", "50대8.5배", "8.5배"] },
+    { "label": "40대 격차", "anyOf": ["40대 6.4배", "40대6.4배", "6.4배"] },
+    { "label": "30대 격차", "anyOf": ["30대 5.5배", "30대5.5배", "5.5배"] }
+  ]
+}

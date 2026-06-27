@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "eval:image-gen": "node scripts/image-gen-eval.mjs",
+    "eval:image-stream-demo": "node scripts/image-stream-demo-server.mjs"
+  },
+  "devDependencies": {}
+}

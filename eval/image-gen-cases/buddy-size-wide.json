@@ -1,0 +1,20 @@
+{
+  "id": "buddy-size-wide",
+  "action": "generate",
+  "prompt": "Create a wide onboarding hero illustration for Buddy, a desktop assistant that helps users understand screenshots. Show a clean desktop workspace with a small friendly assistant presence, no visible text, calm modern product style.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1536x1024",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "layout": "wide hero image",
+    "subject": "desktop screenshot assistant",
+    "style": "modern product onboarding illustration",
+    "textPolicy": "no visible text"
+  }
+}

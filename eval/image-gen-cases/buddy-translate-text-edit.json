@@ -1,0 +1,21 @@
+{
+  "id": "buddy-translate-text-edit",
+  "action": "translate-text",
+  "imagePath": "../images/sample-screen.png",
+  "prompt": "Edit the provided screenshot-like image. Translate any visible English UI text into natural Korean while preserving the original layout, hierarchy, colors, spacing, and visual style. Keep the result clean and readable.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "visible text translated to Korean",
+    "layout": "preserve original UI layout",
+    "readability": "Korean text should be legible",
+    "style": "preserve screenshot style"
+  }
+}

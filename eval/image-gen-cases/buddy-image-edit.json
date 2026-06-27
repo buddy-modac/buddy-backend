@@ -1,0 +1,21 @@
+{
+  "id": "buddy-image-edit",
+  "action": "edit-image",
+  "imagePath": "../images/sample-screen.png",
+  "prompt": "Edit the provided UI screenshot. Add a subtle friendly Buddy assistant callout near the main content area, as if the assistant is explaining the screen. Keep the existing UI structure, colors, and readability intact. Do not cover important text.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "edit": "add Buddy assistant callout",
+    "preservation": "existing UI remains readable",
+    "placement": "callout should not cover important content",
+    "style": "subtle and product-appropriate"
+  }
+}

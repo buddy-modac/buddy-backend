@@ -1,0 +1,21 @@
+{
+  "id": "buddy-preserve-layout-edit",
+  "action": "edit-image",
+  "imagePath": "../images/kbs-wealth-gap.png",
+  "prompt": "Edit the provided chart/report screenshot by adding a subtle Buddy insight badge near the top-right empty area. The badge should feel like a small product annotation. Preserve every chart, label, number, color, and layout detail. Do not cover any important text or data.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "edit": "add subtle Buddy insight badge",
+    "preservation": "all chart data and text remain visible",
+    "placement": "top-right empty area",
+    "risk": "layout distortion or text occlusion"
+  }
+}
