@@ -6,11 +6,11 @@
 ## 빠른 시작 (원샷)
 ```bash
 cd mbti
-cp server/.env.example server/.env.local   # 그리고 ANTHROPIC_API_KEY 입력 (아래)
+cp server/.env.example server/.env.local   # 그리고 ANTHROPIC + OPENAI 키 입력 (아래)
 ./start.sh                                  # 설치 + 키확인 + 서버 기동 → http://localhost:8000
 ```
-`start.sh` = `.venv` 생성 → core+server deps 설치 → self-check → **api-vision 서버 기동** 까지 한 번에. 재실행 안전.
-키를 환경변수로 주려면: `ANTHROPIC_API_KEY=sk-ant-... ./start.sh`
+`start.sh` = `.venv` 생성 → core+server deps 설치 → self-check → **auto 라우팅 서버 기동**(F형→Claude, T형→GPT) 까지 한 번에. 재실행 안전.
+키를 환경변수로 주려면: `ANTHROPIC_API_KEY=sk-ant-... OPENAI_API_KEY=sk-... ./start.sh`
 
 > **LAN 접속(기본값):** 서버는 `0.0.0.0`에 바인딩되어 **같은 와이파이의 폰·다른 PC에서도** 접속됩니다. 기동 시 출력되는 `http://<이-PC-IP>:8000` 을 쓰세요. (`/admin`·`/sample-test`는 이 PC에서만 — 외부는 403). 이 PC 전용으로 막으려면 `HOST=127.0.0.1 ./start.sh`.
 
@@ -20,11 +20,12 @@ cp server/.env.example server/.env.local   # 그리고 ANTHROPIC_API_KEY 입력 
 
 ## API 키 (server/.env.local — 절대 커밋 금지)
 ```
-ANTHROPIC_API_KEY=sk-ant-...     # 필수 — 기본/권장 경로(api-vision). 없으면 start.sh가 거부
-OPENAI_API_KEY=sk-...            # 선택 — openai/auto 백엔드 쓸 때만 필수
+ANTHROPIC_API_KEY=sk-ant-...     # 필수 — Claude(비전·F형). 없으면 start.sh가 거부
+OPENAI_API_KEY=sk-...            # 필수 — GPT(T형). 없으면 start.sh가 거부
 ```
-- **ANTHROPIC_API_KEY = 필수** ([console.anthropic.com](https://console.anthropic.com) → API Keys). `./start.sh`·`./server/run.sh api`는 이 키가 없으면 실행을 거부합니다.
-- **OPENAI_API_KEY = 선택** — `openai`/`auto` 백엔드에서만 필요. `auto`는 두 키 모두 필요.
+- **둘 다 필수** — `./start.sh`(=auto 라우팅)는 두 키가 없거나 템플릿 값 그대로면 실행을 거부합니다.
+  - ANTHROPIC: [console.anthropic.com](https://console.anthropic.com) → API Keys · OPENAI: [platform.openai.com](https://platform.openai.com) → API keys
+- 단일 프로바이더만 쓸 거면 `./server/run.sh api`(Anthropic만) 또는 `./server/run.sh openai`(OpenAI만).
 - `.gitignore`가 `.env.local`·`*.db` 등을 막아 키·로컬 데이터가 커밋되지 않음.
 
 ## 로컬 페이지 (서버 실행 후)

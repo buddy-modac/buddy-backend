@@ -8,9 +8,10 @@ PersonaForge를 **다른 PC에서 처음 받아 실행**하는 사람을 위한 
 ## 0. 이게 뭔가요?
 - **PersonaForge** — MBTI 페르소나 엔진 (Python). 코어는 **외부 의존성 0**(순수 표준 라이브러리).
 - **server/** — 프론트가 보낸 이미지/텍스트를 MBTI 스타일 AI로 해석해 돌려주는 FastAPI 서버.
-- AI 호출 백엔드는 둘 중 하나:
-  - **🟢 API(api-vision) — 실제 운영/배포용 (기본 권장).** Anthropic API 키 사용. 진짜 이미지 비전 지원. **실제 유저는 이걸 씁니다.**
-  - **🧪 구독(subscription) — 로컬 개발/빠른 테스트용.** 로컬 `claude` CLI(Claude Code) 사용, API 키 불필요. 단 비전(이미지 해석)은 안 되고 OCR 텍스트 기반. (키 없이 동작 확인할 때만)
+- AI 호출 백엔드:
+  - **🟢 auto — 기본/권장 (`./start.sh` 가 띄우는 경로).** 페르소나로 모델 라우팅(F형→Claude, T형→GPT mini). **ANTHROPIC + OPENAI 두 키 모두 사용.** 진짜 이미지 비전 지원.
+  - 단일 프로바이더: `api`(Anthropic만) · `openai`(OpenAI만) — 각 1개 키.
+  - **🧪 구독(subscription) — 로컬 개발용.** 로컬 `claude` CLI(Claude Code), 키 불필요. 단 비전 미지원(OCR 텍스트 기반).
 
 ---
 
@@ -19,7 +20,8 @@ PersonaForge를 **다른 PC에서 처음 받아 실행**하는 사람을 위한 
 |---|---|---|
 | **Python 3.8+** | ✅ | `python3 --version` (3.10+ 권장) |
 | **git** | ✅ | 레포 클론 |
-| **Anthropic API 키** | ✅ **필수** | [console.anthropic.com](https://console.anthropic.com) → API Keys. 서버(비전)의 기본/권장 경로 |
+| **Anthropic API 키** | ✅ **필수** | [console.anthropic.com](https://console.anthropic.com) → API Keys. Claude(비전·F형 라우팅) |
+| **OpenAI API 키** | ✅ **필수** | [platform.openai.com](https://platform.openai.com) → API keys. GPT(T형 라우팅) |
 | Claude Code (`claude` CLI) | 선택(개발용) | 키 없이 빠르게 돌려볼 때만. [claude.com/claude-code](https://claude.com/claude-code) 설치+로그인 |
 
 > 설치만 무료로 검증하려면(AI 호출 없이): `python -m personaforge.check`.
@@ -29,11 +31,11 @@ PersonaForge를 **다른 PC에서 처음 받아 실행**하는 사람을 위한 
 ## 2. 설치 + 실행 (원샷 — 권장)
 ```bash
 git clone <레포-URL> && cd <레포>/mbti
-cp server/.env.example server/.env.local   # 그리고 ANTHROPIC_API_KEY 입력 (§4 참고)
+cp server/.env.example server/.env.local   # 그리고 ANTHROPIC + OPENAI 키 입력 (§4 참고)
 ./start.sh                                  # 설치 + 키확인 + 서버 기동 → http://localhost:8000
 ```
-`start.sh` = `.venv` 생성 → core+server deps 설치 → self-check → **api-vision 서버 기동** 까지 한 번에. **재실행 안전.**
-키를 환경변수로 주려면: `ANTHROPIC_API_KEY=sk-ant-... ./start.sh`
+`start.sh` = `.venv` 생성 → core+server deps 설치 → self-check → **auto 라우팅 서버 기동**(F형→Claude, T형→GPT) 까지 한 번에. **재실행 안전.**
+키를 환경변수로 주려면: `ANTHROPIC_API_KEY=sk-ant-... OPENAI_API_KEY=sk-... ./start.sh`
 
 ### 단계별로 하고 싶다면
 ```bash
@@ -56,15 +58,20 @@ python -m personaforge.check        # 오프라인 self-check: "All core checks 
 ## 4. 서버 실행 🚀
 repo 루트에서:
 
-### 🟢 A. API 백엔드 — 기본/권장 (실제 운영·비전)
-실제 유저가 쓰는 경로. **진짜 이미지 비전** 지원. `./start.sh` 가 이 경로를 자동으로 띄웁니다.
+### 🟢 A. auto 백엔드 — 기본/권장 (`./start.sh` 가 띄우는 경로)
+페르소나 라우팅(F형→Claude, T형→GPT mini), **진짜 이미지 비전** 지원. **두 키 모두 필요.**
 ```bash
-cp server/.env.example server/.env.local   # 그리고 .env.local 에 실제 API 키 입력
-./server/run.sh api                          # (또는 그냥 ./start.sh)
+cp server/.env.example server/.env.local   # 그리고 ANTHROPIC + OPENAI 키 입력
+./start.sh                                  # (= ./server/run.sh auto)
 ```
 - `.env.local` 은 **gitignore로 커밋이 막혀** 있습니다. 키를 절대 커밋하지 마세요.
-- 운영 환경에선 `.env.local` 대신 환경변수로 주입해도 됩니다: `ANTHROPIC_API_KEY=... SERVER_AI_BACKEND=api uvicorn server.main:app`
+- 키가 비었거나 템플릿 값(`...여기에...`) 그대로면 실행을 거부합니다.
 
+### 단일 프로바이더로만 쓰려면
+```bash
+./server/run.sh api      # Anthropic만 (ANTHROPIC_API_KEY)
+./server/run.sh openai   # OpenAI만 (OPENAI_API_KEY)
+```
 > **(참고) 키 없는 개발용 백엔드** — `./server/run.sh` (인자 없음)은 로컬 `claude` CLI(Claude Code)를 쓰는 구독 백엔드입니다. 키는 불필요하지만 **이미지 비전 미지원**(OCR 텍스트 기반)이라 운영 경로가 아닙니다.
 
 ### 서버가 뜨면
@@ -94,7 +101,8 @@ cp server/.env.example server/.env.local   # 그리고 .env.local 에 실제 API
 |---|---|
 | `command not found: claude` | 구독 백엔드엔 Claude Code 필요 → [설치·로그인](https://claude.com/claude-code), 또는 API 백엔드 사용 |
 | `AI 호출 실패` (구독) | `claude` 로그인 상태 확인 (`claude` 실행), 구독 토큰 한도 확인 |
-| `502 / ANTHROPIC_API_KEY 없음` | api 백엔드인데 키 없음 → `server/.env.local` 에 키 입력 |
+| `ANTHROPIC_API_KEY / OPENAI_API_KEY 없음·템플릿 값` | `start.sh`(auto)는 두 키 필요 → `server/.env.local` 에 실제 키 입력 (또는 `ANTHROPIC_API_KEY=... OPENAI_API_KEY=... ./start.sh`) |
+| 단일 키만 있을 때 | `./server/run.sh api`(Anthropic만) 또는 `./server/run.sh openai`(OpenAI만) |
 | `ModuleNotFoundError: fastapi` | `pip install -e ".[server]"` |
 | `.venv` 없음 | `./install.sh` 먼저 |
 | 포트 8000 사용중 | `uvicorn server.main:app --port 8001` 등 다른 포트 |
