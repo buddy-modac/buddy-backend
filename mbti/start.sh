@@ -4,8 +4,8 @@
 #   ./start.sh
 #
 # 레포를 처음 클론한 사람이 이 한 줄이면 http://localhost:8000 까지 뜹니다.
-# 전제: Anthropic API 키(api-vision 경로). 키는 server/.env.local 또는 환경변수로 주입.
-# 재실행해도 안전합니다.
+# 전제: ANTHROPIC + OPENAI 두 API 키 (auto 라우팅: F형→Claude, T형→GPT).
+#       키는 server/.env.local 또는 환경변수로 주입. 재실행해도 안전합니다.
 set -e
 cd "$(dirname "$0")"            # mbti/ 루트로 이동
 
@@ -40,23 +40,32 @@ if [ ! -f server/.env.local ]; then
   echo "▶ server/.env.local 생성됨 (.env.example 복사)"
 fi
 
-# 5) API 키 확인 (환경변수 우선 → .env.local). 템플릿 플레이스홀더는 거부.
-KEY="${ANTHROPIC_API_KEY:-}"
-if [ -z "$KEY" ] && [ -f server/.env.local ]; then
-  KEY="$(grep -E '^ANTHROPIC_API_KEY=' server/.env.local | tail -1 | cut -d= -f2-)"
-fi
-case "$KEY" in
-  ""|*여기에*)
-    echo
-    echo "✗ ANTHROPIC_API_KEY 가 비어 있습니다 (또는 템플릿 값 그대로)."
-    echo "  server/.env.local 을 열어 실제 키를 넣고 다시 실행하세요:"
-    echo "      ANTHROPIC_API_KEY=sk-ant-..."
-    echo "  또는 환경변수로:  ANTHROPIC_API_KEY=sk-ant-... ./start.sh"
-    echo "  키 발급: https://console.anthropic.com → API Keys"
-    exit 1
-    ;;
-esac
-echo "▶ ✓ API 키 확인됨"
+# 5) API 키 확인 (환경변수 우선 → .env.local). 빈 값/템플릿 플레이스홀더 거부.
+#    auto 라우팅(F형→Claude, T형→GPT)은 ANTHROPIC + OPENAI 두 키 모두 필요.
+read_key() {  # $1=키 이름 → 값 출력 (env 우선, 없으면 .env.local)
+  local v="${!1:-}"
+  if [ -z "$v" ] && [ -f server/.env.local ]; then
+    v="$(grep -E "^$1=" server/.env.local | tail -1 | cut -d= -f2-)"
+  fi
+  printf '%s' "$v"
+}
+check_key() {  # $1=키 이름, $2=발급 URL
+  local v; v="$(read_key "$1")"
+  case "$v" in
+    ""|*여기에*)
+      echo
+      echo "✗ $1 가 비어 있습니다 (또는 템플릿 값 그대로)."
+      echo "  server/.env.local 을 열어 실제 키를 넣고 다시 실행하세요:  $1=..."
+      echo "  또는 환경변수로:  $1=... ./start.sh"
+      echo "  키 발급: $2"
+      exit 1
+      ;;
+  esac
+}
+check_key ANTHROPIC_API_KEY "https://console.anthropic.com → API Keys"
+check_key OPENAI_API_KEY    "https://platform.openai.com → API keys"
+echo "▶ ✓ API 키 2개 확인됨 (Anthropic + OpenAI)"
 
-# 6) 기동 — run.sh api 가 .env.local 로드 + 최종 검증 + URL 배너 + uvicorn 실행
-exec ./server/run.sh api
+# 6) 기동 — run.sh auto 가 .env.local 로드 + 최종 검증 + URL 배너 + uvicorn 실행
+#    (F형→Claude, T형→GPT 페르소나 라우팅, 두 키 사용)
+exec ./server/run.sh auto

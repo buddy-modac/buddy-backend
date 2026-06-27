@@ -25,41 +25,50 @@ python - <<'PY' || { echo "✗ 서버 의존성 없음 — 설치:  pip install 
 import fastapi, uvicorn, httpx  # noqa
 PY
 
-# .env.local 이 있으면 항상 로드 (server_ocr 은 백엔드와 무관하게 API 키가 필요)
+# .env.local 이 있으면 로드 (server_ocr 은 백엔드와 무관하게 API 키가 필요).
+# 단, 이미 환경변수로 준 키가 우선 — .env.local 의 플레이스홀더가 실제 키를 덮어쓰지 않도록.
+_PRE_ANTHROPIC="${ANTHROPIC_API_KEY:-}"; _PRE_OPENAI="${OPENAI_API_KEY:-}"
 if [ -f server/.env.local ]; then
   set -a; # shellcheck disable=SC1091
   source server/.env.local; set +a
 fi
+[ -n "$_PRE_ANTHROPIC" ] && ANTHROPIC_API_KEY="$_PRE_ANTHROPIC"
+[ -n "$_PRE_OPENAI" ] && OPENAI_API_KEY="$_PRE_OPENAI"
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}" OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+
+# 키가 비었거나 .env.example 템플릿 플레이스홀더(...여기에...)면 실패시키는 헬퍼
+need_key() {  # $1=키 이름, $2=발급 안내
+  local v="${!1:-}"
+  case "$v" in
+    "")        echo "✗ $1 없음 — server/.env.local 에 입력하세요 ($2)"; exit 1 ;;
+    *여기에*)  echo "✗ $1 가 템플릿 값 그대로입니다 — server/.env.local 에 실제 키를 넣으세요 ($2)"; exit 1 ;;
+  esac
+}
+ANTHROPIC_HINT="https://console.anthropic.com → API Keys"
+OPENAI_HINT="https://platform.openai.com → API keys"
 
 # 백엔드 선택
 if [ "${1:-}" = "auto" ]; then
-  if [ -z "${ANTHROPIC_API_KEY:-}" ] || [ -z "${OPENAI_API_KEY:-}" ]; then
-    echo "✗ auto 라우팅은 ANTHROPIC_API_KEY + OPENAI_API_KEY 둘 다 필요합니다 (server/.env.local)"
-    exit 1
-  fi
+  need_key ANTHROPIC_API_KEY "$ANTHROPIC_HINT"
+  need_key OPENAI_API_KEY    "$OPENAI_HINT"
   export SERVER_AI_BACKEND=auto
-  echo "▶ AI 백엔드: auto (F형→Claude Haiku, T형→GPT mini · 페르소나 라우팅)"
+  echo "▶ AI 백엔드: auto (F형→Claude Haiku, T형→GPT mini · 페르소나 라우팅, 두 키 사용)"
 elif [ "${1:-}" = "openai" ]; then
-  if [ -z "${OPENAI_API_KEY:-}" ]; then
-    echo "✗ OPENAI_API_KEY 없음 — openai 백엔드는 키가 필요합니다 (server/.env.local 에 입력)"
-    exit 1
-  fi
+  need_key OPENAI_API_KEY "$OPENAI_HINT"
   export SERVER_AI_BACKEND=openai
   echo "▶ AI 백엔드: openai (모델 ${SERVER_OPENAI_MODEL:-gpt-5.4-mini}, API 과금)"
 elif [ "${1:-}" = "api" ]; then
-  if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-    echo "✗ ANTHROPIC_API_KEY 없음 — api 백엔드는 키가 필요합니다:"
-    echo "    cp server/.env.example server/.env.local   # 그리고 키 입력"
-    exit 1
-  fi
+  need_key ANTHROPIC_API_KEY "$ANTHROPIC_HINT"
   export SERVER_AI_BACKEND=api
   echo "▶ AI 백엔드: api-vision (이미지 비전, API 과금)"
 else
   export SERVER_AI_BACKEND=subscription
   echo "▶ AI 백엔드: subscription (claude CLI, 키 불필요)"
   command -v claude >/dev/null 2>&1 || echo "  ⚠ 'claude' CLI 미설치 — 구독 백엔드엔 Claude Code 필요 (SETUP.md)"
-  [ -n "${ANTHROPIC_API_KEY:-}" ] && echo "  ℹ .env.local 키 로드됨 → server_ocr(이미지 OCR) 사용 가능" \
-                                  || echo "  ℹ API 키 없음 → server_ocr 은 501 (프론트 ocr_text 필요)"
+  case "${ANTHROPIC_API_KEY:-}" in
+    ""|*여기에*) echo "  ℹ API 키 없음 → server_ocr 은 501 (프론트 ocr_text 필요)" ;;
+    *)           echo "  ℹ .env.local 키 로드됨 → server_ocr(이미지 OCR) 사용 가능" ;;
+  esac
 fi
 
 # 0.0.0.0 으로 바인딩 → 같은 와이파이(LAN)의 다른 기기/폰에서도 접속 가능.
