@@ -1,0 +1,12 @@
+# Core PersonaForge needs only the Python standard library — nothing here is
+# required to run the offline pipeline. These are OPTIONAL extras:
+#
+#   pip install -e ".[live]"     # requests — live web collection + live Claude API
+#   pip install -e ".[korean]"   # kiwipiepy — precise Korean morpheme leakage check
+#   pip install -e ".[test]"     # pytest — run the test suite
+#   pip install -e ".[all]"      # everything above
+#
+# (Listed here for reference; prefer the extras above.)
+requests>=2.28
+kiwipiepy>=0.20
+pytest>=7.0

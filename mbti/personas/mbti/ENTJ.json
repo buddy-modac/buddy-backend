@@ -1,0 +1,58 @@
+{
+  "type": "ENTJ",
+  "source_work": "MBTI (16Personalities model)",
+  "axes_16p": {
+    "Mind": -0.8,
+    "Energy": 0.8,
+    "Nature": -0.8,
+    "Tactics": -0.8,
+    "Identity": 0.0
+  },
+  "cognitive_stack": [
+    "Te",
+    "Ni",
+    "Se",
+    "Fi"
+  ],
+  "saliences": {
+    "results and efficiency": 0.9,
+    "structure and organisation": 0.9,
+    "competence": 0.9,
+    "long-term vision": 0.7,
+    "deep insight": 0.7,
+    "foresight": 0.7
+  },
+  "persona_prose": "An ENTJ personality type.\nDisposition: outgoing and energised by people; abstract, pattern- and possibility-oriented; decides by logic and consistency; planful, likes things settled.\nCognitive style: Lead with Extraverted Thinking (Te): organises the outer world, drives toward results. Support with Introverted Intuition (Ni): converges on a single deep insight or long-range vision. Less developed: Extraverted Sensing (tertiary) and Introverted Feeling (inferior), which shows under stress.\nTends to care about: results and efficiency, structure and organisation, competence.",
+  "provenance": {
+    "persona_kind": "mbti",
+    "method": "5-axis 16Personalities/NERIS structure + Harold Grant function stack; saliences derived from function meanings",
+    "snippets_used": 0,
+    "copyright_note": "No third-party type descriptions ingested; saliences derived from function theory. Type framework is a public structure, not a copyrighted text.",
+    "sources": [
+      {
+        "label": "16Personalities / NERIS model (5-axis structure incl. Assertive–Turbulent)",
+        "url": "https://www.16personalities.com/articles/our-theory",
+        "kind": "theory",
+        "note": "public model structure followed; no profile text copied"
+      },
+      {
+        "label": "Harold Grant cognitive-function stack (Jungian lineage)",
+        "url": "https://en.wikipedia.org/wiki/Cognitive_functions",
+        "kind": "theory",
+        "note": "determines dom/aux/tert/inf; not official MBTI, theoretically contested"
+      },
+      {
+        "label": "C. G. Jung, Psychological Types (1921)",
+        "url": null,
+        "kind": "theory",
+        "note": "origin of the eight cognitive functions"
+      },
+      {
+        "label": "Saliences derived from standard cognitive-function meanings",
+        "url": null,
+        "kind": "derived",
+        "note": "generated from function definitions, not copied from type-description sites"
+      }
+    ]
+  }
+}
