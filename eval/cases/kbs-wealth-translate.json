@@ -1,0 +1,19 @@
+{
+  "id": "kbs-wealth-translate",
+  "action": "translate",
+  "targetLanguage": "en",
+  "imagePath": "../images/kbs-wealth-gap.png",
+  "inputMode": "ocr-image",
+  "openaiImageDetail": "high",
+  "imageFidelity": "high",
+  "imageTextPolicy": "ocr_authoritative",
+  "ocrText": "KBS 뉴스 기사 화면. 제목: 9년 치 통계 분석했더니... 포착된 20대의 반전. 화면에는 20대 평균 순자산 격차와 세대별 자산 격차 그래프, 청년 인터뷰 인용문이 보인다.",
+  "expectedFindings": [
+    { "label": "title translation topic", "anyOf": ["20s", "twenties", "asset gap", "wealth gap", "net assets"] },
+    { "label": "20대 상위 20% 평균 순자산", "anyOf": ["631.99 million", "631.99", "6억 3,199만", "6억3199만"] },
+    { "label": "20대 하위 20% 평균 순자산", "anyOf": ["33.27 million", "33.27", "3,327만", "3327만"] },
+    { "label": "20대 격차 배율", "anyOf": ["19 times", "19x", "19배"] },
+    { "label": "세대별 격차", "anyOf": ["30s", "40s", "50s", "60s and older", "60 and older"] },
+    { "label": "interview quotes", "anyOf": ["27-year-old", "25-year-old", "student", "graduate student"] }
+  ]
+}

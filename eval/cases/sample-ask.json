@@ -1,0 +1,7 @@
+{
+  "id": "sample-ask",
+  "action": "ask",
+  "imagePath": "../images/sample-screen.png",
+  "question": "이 에러는 왜 나는 거야?",
+  "ocrText": "Welcome back\nEmail address\nPassword\nSign in\nForgot password?\nInvalid password. Please try again."
+}

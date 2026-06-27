@@ -1,0 +1,6 @@
+{
+  "id": "sample-describe",
+  "action": "describe",
+  "imagePath": "../images/sample-screen.png",
+  "ocrText": "Welcome back\nEmail address\nPassword\nSign in\nForgot password?\nInvalid password. Please try again."
+}

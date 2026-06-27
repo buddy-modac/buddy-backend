@@ -1,0 +1,21 @@
+{
+  "id": "kbs-wealth-describe-low-fidelity",
+  "action": "describe",
+  "imagePath": "../images/kbs-wealth-gap.png",
+  "providerImageOverrides": {
+    "claude": "../images/kbs-wealth-gap-low.jpg"
+  },
+  "inputMode": "ocr-image",
+  "openaiImageDetail": "low",
+  "imageFidelity": "low",
+  "imageTextPolicy": "ocr_authoritative",
+  "ocrText": "KBS 뉴스 기사 화면. 제목은 9년 치 통계 분석과 20대 자산 격차에 대한 내용이다. 화면에는 20대 평균 순자산 격차 그래픽과 세대별 자산 격차 그래프, 인터뷰 인용문이 포함되어 있다.",
+  "expectedFindings": [
+    { "label": "기사 주제", "anyOf": ["20대", "자산 격차", "순자산"] },
+    { "label": "20대 상위 20% 평균 순자산", "anyOf": ["6억 3,199만", "6억3199만", "63199만"] },
+    { "label": "20대 하위 20% 평균 순자산", "anyOf": ["3,327만", "3327만"] },
+    { "label": "20대 격차 배율", "anyOf": ["19배"] },
+    { "label": "세대별 격차 그래프", "anyOf": ["30대", "40대", "50대", "60대 이상"] },
+    { "label": "청년 인터뷰", "anyOf": ["27세", "대학생", "25세", "대학원생"] }
+  ]
+}
