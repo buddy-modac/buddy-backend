@@ -286,9 +286,10 @@ async function loadClipboard(){
     <div class="gcard">
       <a href="${it.url}" target="_blank"><img src="${it.url}" alt="${esc(it.name||'')}" loading="lazy"></a>
       <div class="gm">
-        <a href="${it.url}?download=1" title="${esc(it.name||'')} · ${kst(it.created_at)}">⬇︎ ${(it.size/1024).toFixed(0)}KB</a>
+        <span title="올린 사람">👤 ${esc(it.nickname||"익명")}</span>
         <button class="del" onclick="delClip(${it.id})">삭제</button>
       </div>
+      <div class="gm"><a href="${it.url}?download=1" title="${esc(it.name||'')} · ${kst(it.created_at)}">⬇︎ ${(it.size/1024).toFixed(0)}KB</a></div>
     </div>`).join("");
 }
 async function delClip(id){

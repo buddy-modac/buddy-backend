@@ -35,6 +35,7 @@ def init_clipboard_db(db):
             """CREATE TABLE IF NOT EXISTS clipboard (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
+                nickname TEXT,                  -- 업로더 닉네임 (선택)
                 media_type TEXT NOT NULL,
                 size INTEGER NOT NULL,
                 stored_name TEXT NOT NULL,      -- 디스크 파일명 (서버 생성 uuid+ext)
@@ -42,6 +43,10 @@ def init_clipboard_db(db):
                 created_at TEXT NOT NULL
             )"""
         )
+        # 기존 테이블에 nickname 없으면 추가 (마이그레이션)
+        cols = {r[1] for r in c.execute("PRAGMA table_info(clipboard)").fetchall()}
+        if "nickname" not in cols:
+            c.execute("ALTER TABLE clipboard ADD COLUMN nickname TEXT")
 
 
 def _now() -> str:
@@ -64,6 +69,7 @@ def _row_to_meta(row) -> dict:
         "media_type": row["media_type"],
         "size": row["size"],
         "name": row["name"],
+        "nickname": row["nickname"],
         "created_at": row["created_at"],
     }
 
@@ -72,19 +78,21 @@ class ClipboardJSON(BaseModel):
     image_b64: str
     media_type: str = "image/jpeg"
     name: Optional[str] = None
+    nickname: Optional[str] = None
 
 
-def _save(db, name, media_type, raw: bytes, ip: str) -> dict:
+def _save(db, name, nickname, media_type, raw: bytes, ip: str) -> dict:
     """바이트를 디스크에 쓰고 메타 row 를 INSERT. 파일명은 서버 생성 uuid(경로조작 불가)."""
     ext = _EXT.get((media_type or "").lower(), "")
     stored = f"{uuid.uuid4().hex}{ext}"
     with open(os.path.join(UPLOAD_DIR, stored), "wb") as f:
         f.write(raw)
+    nickname = (nickname or "").strip() or None      # 빈 문자열은 NULL 로 (UI 에서 '익명' 표시)
     with db() as c:
         cur = c.execute(
-            "INSERT INTO clipboard (name, media_type, size, stored_name, uploader_ip, created_at) "
-            "VALUES (?,?,?,?,?,?)",
-            (name, (media_type or "application/octet-stream"), len(raw), stored, ip, _now()),
+            "INSERT INTO clipboard (name, nickname, media_type, size, stored_name, uploader_ip, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (name, nickname, (media_type or "application/octet-stream"), len(raw), stored, ip, _now()),
         )
         row = c.execute("SELECT * FROM clipboard WHERE id=?", (cur.lastrowid,)).fetchone()
     return _row_to_meta(row)
@@ -97,7 +105,7 @@ def build_router(db):
     def list_clipboard():
         with db() as c:
             rows = c.execute(
-                "SELECT id, name, media_type, size, created_at FROM clipboard ORDER BY id DESC"
+                "SELECT id, name, nickname, media_type, size, created_at FROM clipboard ORDER BY id DESC"
             ).fetchall()
         return {"items": [_row_to_meta(r) for r in rows]}
 
@@ -113,6 +121,7 @@ def build_router(db):
             raw = await up.read()
             media_type = (up.content_type or "").lower()
             name = up.filename
+            nickname = form.get("nickname")
         else:
             try:
                 payload = ClipboardJSON(**(await request.json()))
@@ -126,9 +135,10 @@ def build_router(db):
                 raise HTTPException(400, f"image_b64 디코딩 실패: {e}")
             media_type = payload.media_type.lower()
             name = payload.name
+            nickname = payload.nickname
         if not raw:
             raise HTTPException(400, "빈 이미지")
-        return _save(db, name, media_type, raw, ip)
+        return _save(db, name, nickname, media_type, raw, ip)
 
     @router.get("/{item_id}/raw")
     def raw(item_id: int, download: int = 0):

@@ -25,6 +25,7 @@
   <p class="sub">누구나 올리고 받는 공개 갤러리. 표시는 <code>&lt;img src=url&gt;</code> 한 줄 — 프런트는 base64를 만지지 않습니다.</p>
 
   <div class="bar">
+    <input type="text" id="nick" placeholder="닉네임(선택)" style="padding:8px 10px;border-radius:8px;border:1px solid #8884;">
     <input type="file" id="file" accept="image/*">
     <button id="upload">업로드</button>
     <button id="refresh">새로고침</button>
@@ -36,6 +37,7 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const statusEl = $('#status');
+const esc = (s) => (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 async function load() {
   // 목록 → 표시: base64 디코딩도, MIME 추측도 없음. API가 준 url 그대로.
@@ -44,9 +46,10 @@ async function load() {
     <div class="card">
       <a href="${it.url}" target="_blank"><img src="${it.url}" alt="${it.name || ''}" loading="lazy"></a>
       <div class="meta">
-        <a href="${it.url}?download=1">⬇︎ ${(it.size/1024).toFixed(0)}KB</a>
+        <span title="올린 사람">👤 ${esc(it.nickname || '익명')}</span>
         <button class="del" data-id="${it.id}">삭제</button>
       </div>
+      <div class="meta"><a href="${it.url}?download=1">⬇︎ ${(it.size/1024).toFixed(0)}KB</a></div>
     </div>`).join('') || '<p style="opacity:.6">아직 이미지가 없습니다.</p>';
 }
 
@@ -57,6 +60,8 @@ $('#upload').onclick = async () => {
   // 멀티파트 업로드 — 클라이언트 base64 인코딩 0줄.
   const fd = new FormData();
   fd.append('file', f);
+  const nk = $('#nick').value.trim();
+  if (nk) fd.append('nickname', nk);
   const r = await fetch('/clipboard', { method: 'POST', body: fd });
   statusEl.textContent = r.ok ? '완료' : ('실패: ' + r.status);
   $('#file').value = '';
