@@ -102,3 +102,61 @@ node scripts/ai-eval.mjs \
 - `estimatedCostUsd`: 스크립트 내부 가격표 기반 비용 추정
 - `finding score`: `expectedFindings` 중 응답에 포함된 항목 비율
 - aggregate metrics: 전략별, provider별, 모델별 평균 지연시간과 총 비용
+
+## Image generation eval
+
+이미지 생성/편집 API는 입력과 결과 구조가 달라 별도 하네스로 분리했습니다.
+
+```bash
+node scripts/image-gen-eval.mjs --all-cases --dry-run
+node scripts/image-gen-eval.mjs --all-cases --mock
+```
+
+실제 OpenAI 이미지 API를 호출하려면 `.env`에 `OPENAI_API_KEY` 또는 `CODEX_API_KEY`를 설정하고 `--mock` 없이 실행합니다.
+
+```bash
+node scripts/image-gen-eval.mjs --all-cases
+```
+
+기본 케이스는 `eval/image-gen-cases/`에 있습니다.
+
+- `buddy-simple-generate`: 단순 이미지 생성
+- `buddy-translate-text-edit`: 이미지 안의 텍스트를 한국어로 번역해 반영
+- `buddy-image-edit`: 기존 이미지를 수정해 Buddy 설명 callout 반영
+- `buddy-quality-low`, `buddy-quality-high`: 같은 프롬프트의 품질 옵션 비교
+- `buddy-size-wide`: 와이드 온보딩 이미지 생성
+- `buddy-format-webp`: WebP 출력과 압축 효율 확인
+- `buddy-dense-text-translation`: 텍스트가 많은 차트/리포트 이미지 번역 편집
+- `buddy-preserve-layout-edit`: 원본 레이아웃 보존형 이미지 수정
+- `medium-article-translate-ko`: 기사형 스크린샷의 텍스트 한국어 번역 적용
+- `medium-article-content-rewrite`: 기사 제목/부제 내용을 더 차분한 표현으로 수정
+- `medium-article-image-change`: 기사 본문 이미지 영역만 새로운 비주얼로 변경
+- `medium-article-highlight`: 기사형 스크린샷에 하이라이트 표시 추가
+- `medium-article-shapes`: 기사형 스크린샷에 사각형/화살표 도형 추가
+- `medium-article-speech-bubble`: 기사형 스크린샷에 Buddy 말풍선 추가
+
+검증 축은 다음과 같습니다.
+
+- `latencyTotalMs`: 이미지 생성 또는 편집 완료 시간
+- `output.format`, `output.width`, `output.height`, `output.bytes`: 결과 이미지 속성
+- `generation.quality`, `generation.size`, `generation.outputFormat`, `generation.background`: 품질/크기/효율 조절 옵션
+- `manualReview.checklist`: 액션별 수동 품질 평가 기준
+
+모델별 비교는 `--models` 옵션으로 실행합니다.
+
+```bash
+node scripts/image-gen-eval.mjs \
+  --cases eval/image-gen-cases/medium-article-translate-ko.json,eval/image-gen-cases/medium-article-image-change.json,eval/image-gen-cases/medium-article-speech-bubble.json \
+  --models gpt-image-1,gpt-image-1.5,gpt-image-2 \
+  --output-dir eval/results/image-gen-model-matrix
+```
+
+Streaming partial image 체감 테스트는 로컬 데모 서버로 실행합니다.
+
+```bash
+npm run eval:image-stream-demo
+```
+
+브라우저에서 `http://127.0.0.1:8767/eval/results/image-gen-model-matrix/stream-demo.html`을 열면 `stream: true`, `partial_images` 호출의 첫 이미지 도착 시간과 최종 완료 시간을 확인할 수 있습니다.
+
+실제 핵심 3개 케이스 실행 결과 요약은 `docs/image-gen-eval-report.md`에 정리했습니다.

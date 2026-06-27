@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-translate-ko",
+  "action": "translate-text",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot. Translate the visible English title, subtitle, metadata, and body text into natural Korean. Preserve the Medium-like article layout, typography hierarchy, spacing, highlighted paragraphs, icons, author row, and brain image grid. Keep names, dates, numbers, and engagement counts unchanged unless they need natural Korean spacing.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "translate article screenshot text to Korean",
+    "layout": "preserve article layout and highlighted paragraphs",
+    "imagePolicy": "brain image grid should remain unchanged",
+    "numberPolicy": "keep numbers and dates accurate"
+  }
+}

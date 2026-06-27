@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-highlight",
+  "action": "edit-image",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot by adding subtle visual highlighting only. Add a translucent yellow highlight behind the headline and behind the visible statistic about checking phones within 10 minutes of waking. Preserve all text exactly as written, including spelling, numbers, dates, author row, metadata, icons, body text, and the brain image grid. Do not rewrite or translate any text.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "add visual highlights",
+    "highlightTargets": "headline and phone-checking statistic",
+    "preservation": "all original text and image content unchanged",
+    "risk": "text mutation outside highlighted areas"
+  }
+}

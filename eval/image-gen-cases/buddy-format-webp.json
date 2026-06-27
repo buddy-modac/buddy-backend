@@ -1,0 +1,21 @@
+{
+  "id": "buddy-format-webp",
+  "action": "generate",
+  "prompt": "Create a friendly minimal desktop assistant mascot icon for an app named Buddy. Use a polished product illustration style, soft lighting, no visible text, centered composition, transparent background.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "medium",
+    "outputFormat": "webp",
+    "outputCompression": 70,
+    "background": "transparent",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "comparison": "format efficiency",
+    "format": "webp",
+    "compression": 70,
+    "textPolicy": "no visible text"
+  }
+}

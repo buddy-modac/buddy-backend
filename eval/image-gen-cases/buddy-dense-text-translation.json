@@ -1,0 +1,21 @@
+{
+  "id": "buddy-dense-text-translation",
+  "action": "translate-text",
+  "imagePath": "../images/kbs-wealth-gap.png",
+  "prompt": "Edit the provided chart/report screenshot. Translate visible Korean financial report labels and short text into natural English while preserving chart layout, numbers, spacing, colors, and hierarchy. Keep all numeric values unchanged and readable.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "dense text translation inside image",
+    "numberPolicy": "all numeric values must remain unchanged",
+    "layout": "preserve chart/report layout",
+    "readability": "translated labels should be legible"
+  }
+}

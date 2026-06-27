@@ -1,0 +1,20 @@
+{
+  "id": "buddy-quality-low",
+  "action": "generate",
+  "prompt": "Create a friendly minimal desktop assistant mascot icon for an app named Buddy. Use a polished product illustration style, soft lighting, no visible text, centered composition, transparent background.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1024",
+    "quality": "low",
+    "outputFormat": "png",
+    "background": "transparent",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "comparison": "quality baseline",
+    "quality": "low",
+    "subject": "friendly desktop assistant mascot",
+    "textPolicy": "no visible text"
+  }
+}

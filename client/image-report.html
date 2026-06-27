@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy — Image Eval Report</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="report-page">
+  <main class="report-shell">
+    <header class="report-header">
+      <a href="index.html" class="back-link">← 홈</a>
+      <div>
+        <p class="report-kicker">Image generation evaluation</p>
+        <h1>Buddy 이미지 생성/편집 리포트</h1>
+        <p class="report-lead">수집된 모델 비교, 비용, 스트리밍, 기사형 편집 결과를 한 화면에서 확인합니다.</p>
+      </div>
+      <div class="report-actions">
+        <a class="report-button" href="../eval/results/image-gen-model-matrix/index.html">모델 비교 원문</a>
+        <a class="report-button" href="../eval/results/image-gen-model-matrix/stream-demo.html">스트리밍 데모</a>
+      </div>
+    </header>
+
+    <section class="metric-grid" aria-label="핵심 지표">
+      <div class="metric-card">
+        <span>실제 호출</span>
+        <strong id="metric-runs">-</strong>
+        <small>mock 제외</small>
+      </div>
+      <div class="metric-card">
+        <span>모델 매트릭스 비용</span>
+        <strong id="metric-matrix-cost">-</strong>
+        <small>9 runs</small>
+      </div>
+      <div class="metric-card">
+        <span>전체 실제 비용</span>
+        <strong id="metric-total-cost">-</strong>
+        <small>usage 기반 추정</small>
+      </div>
+      <div class="metric-card">
+        <span>첫 스트리밍 preview</span>
+        <strong id="metric-first-preview">-</strong>
+        <small>gpt-image-1.5</small>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <div class="section-heading">
+        <h2>모델별 비교</h2>
+        <p>기사형 스크린샷 3개 케이스를 gpt-image-1, gpt-image-1.5, gpt-image-2로 비교했습니다.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>Model</th>
+              <th>Action</th>
+              <th>Latency</th>
+              <th>Bytes</th>
+              <th>Cost</th>
+              <th>Report</th>
+            </tr>
+          </thead>
+          <tbody id="model-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <div class="section-heading">
+        <h2>결과 이미지</h2>
+        <p>각 모델이 생성한 실제 결과입니다. 긴 기사형 스크린샷에서는 텍스트 보존 실패가 자주 보였습니다.</p>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </section>
+
+    <section class="report-section report-columns">
+      <div>
+        <div class="section-heading">
+          <h2>주요 결론</h2>
+        </div>
+        <ul class="insight-list" id="insights"></ul>
+      </div>
+      <div>
+        <div class="section-heading">
+          <h2>수집 리포트</h2>
+        </div>
+        <div class="link-list" id="report-links"></div>
+      </div>
+    </section>
+
+    <section class="report-section">
+      <div class="section-heading">
+        <h2>스트리밍 결과</h2>
+        <p>최종 완료 시간을 줄이기보다는 첫 preview를 먼저 보여 체감 대기 시간을 줄이는 방식입니다.</p>
+      </div>
+      <div class="stream-summary" id="stream-summary"></div>
+    </section>
+  </main>
+
+  <script src="image-report.js"></script>
+</body>
+</html>

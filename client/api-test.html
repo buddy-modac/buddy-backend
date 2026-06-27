@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buddy — API 테스트</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="card">
+    <a href="index.html" class="back-link">← 돌아가기</a>
+    <h1>API 테스트</h1>
+    <p class="api-base" id="api-base"></p>
+
+    <form id="api-form" class="api-form">
+      <label class="field">
+        <span>Method</span>
+        <select id="api-method">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Path</span>
+        <input id="api-path" type="text" value="/api/questions" autocomplete="off" />
+      </label>
+
+      <label class="field">
+        <span>Body</span>
+        <textarea id="api-body" rows="6" placeholder='{"key":"value"}'></textarea>
+      </label>
+
+      <button type="submit" class="btn-primary">호출</button>
+    </form>
+
+    <pre id="api-result" class="api-result" aria-live="polite">대기 중</pre>
+  </main>
+
+  <script src="api.js"></script>
+  <script>
+    const form = document.getElementById('api-form');
+    const methodEl = document.getElementById('api-method');
+    const pathEl = document.getElementById('api-path');
+    const bodyEl = document.getElementById('api-body');
+    const resultEl = document.getElementById('api-result');
+
+    document.getElementById('api-base').textContent = `Base URL: ${window.BuddyApi.getApiBaseUrl()}`;
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      resultEl.textContent = '호출 중...';
+
+      try {
+        const method = methodEl.value;
+        const rawBody = bodyEl.value.trim();
+        const options = { method };
+
+        if (rawBody && method !== 'GET') {
+          options.body = rawBody;
+        }
+
+        const result = await window.BuddyApi.request(pathEl.value.trim(), options);
+        resultEl.textContent = typeof result === 'string'
+          ? result
+          : JSON.stringify(result, null, 2);
+      } catch (error) {
+        resultEl.textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

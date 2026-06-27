@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-image-change",
+  "action": "edit-image",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot by replacing only the six-panel brain scan image area with a clean, modern editorial illustration about morning focus and brain health. Keep the replacement image in the exact same rectangular area. Preserve all article text, metadata, icons, highlighted paragraphs, margins, and surrounding layout. Do not cover or rewrite any text outside the image area.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "replace article image area only",
+    "imageArea": "six-panel brain scan grid",
+    "replacement": "modern editorial illustration about morning focus and brain health",
+    "preservation": "all text and layout outside image area unchanged"
+  }
+}

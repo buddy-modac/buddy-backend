@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-content-rewrite",
+  "action": "edit-image",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot by rewriting the visible headline and subtitle to sound more balanced, evidence-aware, and less fear-driven. Replace the headline with: \"A Neuroscientist's Guide to Healthier Morning Habits\". Replace the subtitle with: \"Small changes in the first hour after waking may support mood, focus, and energy.\" Preserve the rest of the layout, author row, icons, highlighted paragraphs, and brain image grid. Do not add new claims.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "rewrite headline and subtitle only",
+    "headline": "A Neuroscientist's Guide to Healthier Morning Habits",
+    "subtitle": "Small changes in the first hour after waking may support mood, focus, and energy.",
+    "preservation": "rest of article screenshot should remain unchanged"
+  }
+}

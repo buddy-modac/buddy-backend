@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-shapes",
+  "action": "edit-image",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot by adding simple annotation shapes only. Draw a thin red rounded rectangle around the headline and a blue arrow pointing to the highlighted paragraph about the first 60-90 minutes after waking. Preserve all text exactly as written. Do not rewrite, translate, blur, crop, or move any original content.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "add rectangle and arrow annotations",
+    "shapeTargets": "headline and first highlighted paragraph",
+    "preservation": "all original content unchanged",
+    "risk": "annotation occludes or mutates text"
+  }
+}

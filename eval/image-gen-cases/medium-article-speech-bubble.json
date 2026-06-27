@@ -1,0 +1,21 @@
+{
+  "id": "medium-article-speech-bubble",
+  "action": "edit-image",
+  "imagePath": "../images/medium-neuroscience-article.png",
+  "prompt": "Edit the provided article screenshot by adding a small Buddy assistant speech bubble in the right margin near the highlighted paragraph. The bubble text should be Korean: \"아침 첫 60분 루틴을 점검해보세요.\" Keep the bubble fully inside the canvas and do not cover important text. Preserve all original article text, metadata, icons, and the brain image grid exactly.",
+  "generation": {
+    "provider": "openai",
+    "model": "gpt-image-1",
+    "size": "1024x1536",
+    "quality": "medium",
+    "outputFormat": "png",
+    "background": "auto",
+    "n": 1
+  },
+  "expectedCriteria": {
+    "task": "add Buddy speech bubble",
+    "bubbleText": "아침 첫 60분 루틴을 점검해보세요.",
+    "placement": "right margin near highlighted paragraph",
+    "preservation": "original article content unchanged"
+  }
+}
