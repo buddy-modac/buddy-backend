@@ -12,6 +12,7 @@ import os
 import json
 import time
 import uuid
+import ipaddress
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -22,15 +23,44 @@ from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from pydantic import BaseModel
 
 
-# 관리/파괴적 엔드포인트는 이 호스트(localhost)에서만 — LAN 노출 차단.
+# 관리/파괴적 엔드포인트는 기본적으로 이 호스트(localhost)에서만 — LAN 노출 차단.
 _LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def _parse_allow_nets(env_val: str):
+    """SERVER_ADMIN_ALLOW_IPS 를 IP/CIDR 목록으로 파싱. 잘못된 토큰은 무시."""
+    nets = []
+    for tok in (env_val or "").replace(" ", "").split(","):
+        if not tok:
+            continue
+        try:
+            nets.append(ipaddress.ip_network(tok, strict=False))
+        except ValueError:
+            pass
+    return nets
+
+
+# 추가 허용 IP (예: 내 PC LAN IP). 콤마 구분, 단일 IP·CIDR 모두 가능.
+#   server/.env.local 또는 환경변수:  SERVER_ADMIN_ALLOW_IPS=192.168.0.50,10.0.0.0/24
+_ADMIN_ALLOW_NETS = _parse_allow_nets(os.environ.get("SERVER_ADMIN_ALLOW_IPS", ""))
+
+
+def _admin_ip_allowed(host: str) -> bool:
+    if host in _LOOPBACK:
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(ip in net for net in _ADMIN_ALLOW_NETS)
 
 
 def require_localhost(request: Request):
     host = request.client.host if request.client else ""
-    if host not in _LOOPBACK:
-        raise HTTPException(403, "이 엔드포인트는 localhost(이 PC)에서만 접근 가능합니다. "
-                                 "http://localhost:8000/admin 으로 접속하세요.")
+    if not _admin_ip_allowed(host):
+        raise HTTPException(403, "이 엔드포인트는 localhost 또는 허용된 IP에서만 접근 가능합니다. "
+                                 f"현재 접속 IP: {host or '알수없음'} — 서버에서 환경변수 "
+                                 f"SERVER_ADMIN_ALLOW_IPS={host} 로 허용할 수 있습니다.")
 
 from .personas import MBTI_DESC, VALID_PERSONAS, VALID_MODES
 from .ai_backend import (get_backend, get_backend_for, pick_backend, v2_params,
