@@ -3,24 +3,29 @@
 이미지+텍스트를 받아 **선택한 MBTI 페르소나의 소통 스타일**로 번역/설명해주는 AI 서버.
 `personaforge`(MBTI 엔진) + FastAPI 서버로 구성. (롤플레이 "캐릭터" 기능은 제외, MBTI 전용)
 
-## 빠른 시작
+## 빠른 시작 (원샷)
 ```bash
 cd mbti
-./install.sh --all                # .venv 생성 + 패키지·서버 deps 설치 (--all = fastapi/uvicorn/httpx 포함)
-cp server/.env.example server/.env.local   # API 키 입력 (아래)
-./server/run.sh auto              # http://localhost:8000
+cp server/.env.example server/.env.local   # 그리고 ANTHROPIC_API_KEY 입력 (아래)
+./start.sh                                  # 설치 + 키확인 + 서버 기동 → http://localhost:8000
 ```
-> 서버를 쓰려면 `--all`(또는 `pip install -e ".[server]"`)이 필요해요. `./install.sh`만 하면 서버 deps가 빠집니다.
-- 키 없이 로컬 테스트: `./server/run.sh` (구독 claude CLI, 비전 없음)
-- 단일 프로바이더: `./server/run.sh api`(Anthropic) · `./server/run.sh openai`
-- **auto**: 페르소나로 모델 라우팅(F형→Claude, T형→GPT mini) — 두 키 필요
+`start.sh` = `.venv` 생성 → core+server deps 설치 → self-check → **api-vision 서버 기동** 까지 한 번에. 재실행 안전.
+키를 환경변수로 주려면: `ANTHROPIC_API_KEY=sk-ant-... ./start.sh`
+
+> **LAN 접속(기본값):** 서버는 `0.0.0.0`에 바인딩되어 **같은 와이파이의 폰·다른 PC에서도** 접속됩니다. 기동 시 출력되는 `http://<이-PC-IP>:8000` 을 쓰세요. (`/admin`·`/sample-test`는 이 PC에서만 — 외부는 403). 이 PC 전용으로 막으려면 `HOST=127.0.0.1 ./start.sh`.
+
+> 수동/단계별 설치는 [`SETUP.md`](SETUP.md) 참고.
+> 단일 프로바이더 직접 실행: `./server/run.sh api`(Anthropic) · `./server/run.sh openai`(키 필요).
+> 키 없이 돌리는 구독(claude CLI) 백엔드는 개발용 — 비전 미지원, 자세한 건 `SETUP.md`.
 
 ## API 키 (server/.env.local — 절대 커밋 금지)
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...            # openai/auto 쓸 때
+ANTHROPIC_API_KEY=sk-ant-...     # 필수 — 기본/권장 경로(api-vision). 없으면 start.sh가 거부
+OPENAI_API_KEY=sk-...            # 선택 — openai/auto 백엔드 쓸 때만 필수
 ```
-`.gitignore`가 `.env.local`·`*.db` 등을 막아 키·로컬 데이터가 커밋되지 않음.
+- **ANTHROPIC_API_KEY = 필수** ([console.anthropic.com](https://console.anthropic.com) → API Keys). `./start.sh`·`./server/run.sh api`는 이 키가 없으면 실행을 거부합니다.
+- **OPENAI_API_KEY = 선택** — `openai`/`auto` 백엔드에서만 필요. `auto`는 두 키 모두 필요.
+- `.gitignore`가 `.env.local`·`*.db` 등을 막아 키·로컬 데이터가 커밋되지 않음.
 
 ## 로컬 페이지 (서버 실행 후)
 | 경로 | 용도 |
@@ -45,5 +50,5 @@ mbti/
   server/         # FastAPI 서버 + 로컬 HTML 페이지
   personas/       # curated/·mbti/ (MBTI 페르소나 데이터)
   docs/MODEL_ROUTING.md
-  pyproject.toml · requirements.txt · install.sh · SETUP.md
+  pyproject.toml · requirements.txt · start.sh · install.sh · SETUP.md
 ```

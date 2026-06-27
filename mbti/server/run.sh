@@ -62,5 +62,26 @@ else
                                   || echo "  ℹ API 키 없음 → server_ocr 은 501 (프론트 ocr_text 필요)"
 fi
 
-echo "▶ http://localhost:8000  (콘솔)  ·  /docs (API 문서)  ·  Ctrl+C 종료"
-exec uvicorn server.main:app --host 127.0.0.1 --port 8000 --reload
+# 0.0.0.0 으로 바인딩 → 같은 와이파이(LAN)의 다른 기기/폰에서도 접속 가능.
+# HOST 환경변수로 덮어쓸 수 있음 (예: HOST=127.0.0.1 ./server/run.sh api → 이 PC 전용).
+BIND="${HOST:-0.0.0.0}"; PORT="${PORT:-8000}"
+# 표시용 LAN IP 탐지 (macOS en0/en1 → Linux hostname -I)
+LAN_IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')"
+[ -z "$LAN_IP" ] && LAN_IP="<이-기기-IP>"
+BASE="http://${LAN_IP}:${PORT}"
+echo ""
+echo "────────────────────────────────────────────────────────────"
+echo "  ▶ 서버 기동 — 바인딩: ${BIND}:${PORT}  (같은 와이파이의 다른 기기에서 접속 가능)"
+echo "  ─ 다른 기기/폰에서 (이 PC LAN IP) ────────────────────────"
+printf "    %-32s %s\n" "${BASE}/"            "콘솔(분석)"
+printf "    %-32s %s\n" "${BASE}/api"         "API 명세"
+printf "    %-32s %s\n" "${BASE}/docs"        "Swagger 문서"
+printf "    %-32s %s\n" "${BASE}/quiz-ui"     "MBTI 퀴즈"
+printf "    %-32s %s\n" "${BASE}/health"      "헬스체크"
+echo "  ─ 이 PC 전용 (외부 기기는 403 차단) ──────────────────────"
+printf "    %-32s %s\n" "http://localhost:${PORT}/sample-test" "속도/품질 비교"
+printf "    %-32s %s\n" "http://localhost:${PORT}/admin"       "DB 관리자"
+echo "  ────────────────────────────────────────────────────────"
+echo "  이 PC에서는 http://localhost:${PORT} 로도 접속됩니다 · 종료: Ctrl+C"
+echo "────────────────────────────────────────────────────────────"
+exec uvicorn server.main:app --host "${BIND}" --port "${PORT}" --reload

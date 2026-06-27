@@ -91,7 +91,7 @@ def main() -> int:
     print("-" * 40)
     if failed == 0:
         print("\033[32mAll core checks passed.\033[0m You're ready to go.")
-        print("Next: see README 'Quick start', or run examples/demo_offline.py")
+        print("Next: see README 'Quick start' (server: ./start.sh)")
         return 0
     print(f"\033[31m{failed} core check(s) failed.\033[0m")
     return 1

@@ -44,6 +44,7 @@ echo "Running self-check ..."
 python -m personaforge.check || true
 
 echo
-echo "Done. To use it next time:"
+echo "Done. To verify or launch:"
 echo "    source .venv/bin/activate"
-echo "    python examples/demo_offline.py"
+echo "    python -m personaforge.check     # offline self-check (no API key)"
+echo "    ./start.sh                        # install + launch API server (one-shot)"
