@@ -30,3 +30,36 @@ VALID_MODES = {"translate", "explain"}
 
 # safety: 표시 dict가 16종과 어긋나지 않게
 assert VALID_PERSONAS == set(MBTI_DESC), "MBTI_DESC와 ALL_TYPES 불일치"
+
+# MBTI 궁합 Top-3 (16personalities/인지기능 골든페어 기준). 1순위=보완형 골든페어.
+COMPATIBILITY = {
+    "INTJ": ["ENFP", "ENTP", "INFJ"],
+    "INTP": ["ENTJ", "ENFJ", "INFJ"],
+    "ENTJ": ["INTP", "INFP", "ENFP"],
+    "ENTP": ["INFJ", "INTJ", "ENFJ"],
+    "INFJ": ["ENFP", "ENTP", "INTJ"],
+    "INFP": ["ENFJ", "ENTJ", "INFJ"],
+    "ENFJ": ["INFP", "ISFP", "INTP"],
+    "ENFP": ["INTJ", "INFJ", "ENTJ"],
+    "ISTJ": ["ESFP", "ESTP", "ISFJ"],
+    "ISFJ": ["ESTP", "ESFP", "ESTJ"],
+    "ESTJ": ["ISFP", "ISTP", "ESFJ"],
+    "ESFJ": ["ISTP", "ISFP", "ESTJ"],
+    "ISTP": ["ESFJ", "ESTJ", "ENFJ"],
+    "ISFP": ["ESTJ", "ESFJ", "ENFJ"],
+    "ESTP": ["ISFJ", "ISTJ", "ESFP"],
+    "ESFP": ["ISTJ", "ISFJ", "ESTP"],
+}
+
+# safety: 16종 전부 · 각 3개 · 자기 자신 제외 · 유효 타입 · 중복 없음
+assert set(COMPATIBILITY) == VALID_PERSONAS, "COMPATIBILITY 키가 16종과 불일치"
+for _t, _lst in COMPATIBILITY.items():
+    assert len(_lst) == 3 and len(set(_lst)) == 3, f"{_t} 궁합은 서로 다른 3개여야"
+    assert _t not in _lst, f"{_t} 궁합에 자기 자신 포함 불가"
+    assert all(x in VALID_PERSONAS for x in _lst), f"{_t} 궁합에 잘못된 타입"
+
+
+def compatibility_for(persona: str):
+    """궁합 Top-3 → [{rank, type, desc}]. 모르는 타입이면 빈 리스트."""
+    return [{"rank": i, "type": t, "desc": MBTI_DESC[t]}
+            for i, t in enumerate(COMPATIBILITY.get(persona, []), 1)]

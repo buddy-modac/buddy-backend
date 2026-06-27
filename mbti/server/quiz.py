@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from .quiz_data import AXES, QUESTIONS
+from .personas import compatibility_for
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -174,6 +175,7 @@ def build_router(db):
                     "done": True,
                     "result": result,        # 4글자 MBTI → persona 로 사용
                     "scores": scores,
+                    "compatibility": compatibility_for(result),   # 궁합 Top-3
                 }
 
             # 아직 남았으면 다음 문항
@@ -209,7 +211,9 @@ def build_router(db):
             "current_index": idx,
             "result": row["result"],
         }
-        if row["status"] != "done":
+        if row["status"] == "done":
+            out["compatibility"] = compatibility_for(row["result"])   # 궁합 Top-3
+        else:
             out["question"] = _public_question(qids[idx], idx, len(qids))
         return out
 
