@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+httpx
+# personaforge는 repo 루트에서 `pip install -e .`로 이미 설치됨(서버가 import).

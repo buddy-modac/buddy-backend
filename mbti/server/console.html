@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Image Assistant — 테스트 콘솔</title>
+<style>
+  :root{--bg:#0f1420;--card:#1a2030;--line:#2a3346;--txt:#e6edf3;--mut:#8b97a7;
+        --acc:#5b9dff;--ok:#3fb37f;--warn:#f6c560;--hot:#ff7a7a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
+  header{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;
+         align-items:center;gap:14px}
+  header h1{font-size:16px;margin:0}
+  .pill{font-size:12px;padding:3px 9px;border-radius:20px;background:#243049;color:var(--mut)}
+  .pill b{color:var(--ok)}
+  .wrap{display:flex;gap:16px;padding:16px;align-items:flex-start}
+  .col{flex:1;min-width:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;
+        padding:14px;margin-bottom:14px}
+  .card h2{font-size:13px;margin:0 0 10px;color:var(--mut);text-transform:uppercase;
+           letter-spacing:.5px}
+  label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+  input,select,textarea{width:100%;background:#0d1220;border:1px solid var(--line);
+        color:var(--txt);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit}
+  textarea{resize:vertical;min-height:64px}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .modes{display:flex;gap:8px;margin-top:4px}
+  .modes button{flex:1;background:#0d1220;border:1px solid var(--line);color:var(--mut);
+        padding:8px;border-radius:7px;cursor:pointer}
+  .modes button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  #send{width:100%;margin-top:14px;background:var(--acc);color:#fff;border:0;
+        padding:11px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  #send:disabled{opacity:.5;cursor:wait}
+  #preview{max-width:100%;max-height:150px;border-radius:7px;margin-top:8px;display:none;
+        border:1px solid var(--line)}
+  .drop{border:1px dashed var(--line);border-radius:7px;padding:10px;text-align:center;
+        color:var(--mut);cursor:pointer;font-size:12px}
+  /* timeline */
+  .step{margin:7px 0}
+  .step .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+  .bar{height:9px;border-radius:5px;background:#2a3346}
+  .bar>i{display:block;height:100%;border-radius:5px;background:var(--acc)}
+  .step.llm .bar>i{background:var(--warn)}
+  .step.llm .top b{color:var(--warn)}
+  .total{margin-top:8px;font-size:12px;color:var(--mut)}
+  .live{color:var(--warn);animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  pre{background:#0d1220;border:1px solid var(--line);border-radius:7px;padding:10px;
+      overflow:auto;font-size:12px;margin:0;max-height:280px;white-space:pre-wrap;word-break:break-all}
+  details summary{cursor:pointer;color:var(--mut);font-size:12px;margin-bottom:6px}
+  .result{background:#0d1220;border:1px solid var(--line);border-radius:7px;padding:14px;
+          overflow:auto}
+  .result h2,.result h3{color:var(--acc);margin:12px 0 6px}
+  .result table{border-collapse:collapse;margin:8px 0;font-size:13px}
+  .result td,.result th{border:1px solid var(--line);padding:4px 8px}
+  .result blockquote{border-left:3px solid var(--acc);margin:8px 0;padding:2px 12px;color:var(--mut)}
+  .result hr{border:0;border-top:1px solid var(--line)}
+  .meta{font-size:12px;color:var(--mut);margin-bottom:8px}
+  .meta b{color:var(--txt)}
+  .replybar{font-size:12px;color:var(--mut);background:#243049;padding:6px 10px;
+            border-radius:7px;margin-bottom:10px;display:none}
+  .replybar b{color:var(--acc)} .replybar button{margin-left:8px;font-size:11px}
+  .err{color:var(--hot)}
+  button.mini{background:#243049;border:1px solid var(--line);color:var(--mut);
+        border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🖼️ AI Image Assistant — 테스트 콘솔</h1>
+  <span class="pill" id="backend">backend: …</span>
+  <span class="pill"><a href="/quiz-ui" style="color:inherit">🧭 MBTI 퀴즈</a></span>
+  <span class="pill"><a href="/api" style="color:inherit">📑 API 명세</a></span>
+  <span class="pill"><a href="/sample-test" style="color:inherit">⏱️ v1·v2 비교</a></span>
+  <span class="pill"><a href="/admin" style="color:inherit">🗄️ DB 관리</a></span>
+  <span class="pill">localhost:8000</span>
+</header>
+
+<div class="wrap">
+  <!-- 왼쪽: 요청 폼 -->
+  <div class="col" style="max-width:420px">
+    <div class="card">
+      <h2>요청 만들기</h2>
+      <div class="replybar" id="replybar"></div>
+      <div class="row">
+        <div><label>닉네임</label><input id="nickname" value="minsu"></div>
+        <div><label>persona (MBTI)</label><select id="persona"></select></div>
+      </div>
+      <button id="mysum" style="margin-top:6px">📋 내 오늘 요약 보기</button>
+      <label>mode</label>
+      <div class="modes" id="modes">
+        <button data-m="translate" class="on">translate (번역)</button>
+        <button data-m="explain">explain (설명)</button>
+      </div>
+      <label>ocr_text — 이미지에서 뽑은 텍스트 (프론트 OCR)</label>
+      <textarea id="text" placeholder="예: NOTICE: The pool is closed until March 15.">CAFE MENU / Americano $4.5 / Latte $5.0 / Today: Pumpkin Spice</textarea>
+      <label>user_text — 유저 추가 요청 (선택 · 비우면 mode대로)</label>
+      <input id="usertext" placeholder="예: 제목만 번역해줘 / 쉽게 설명해줘">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px">
+        <input type="checkbox" id="serverocr" style="width:auto"> ocr_text 비우고 서버 OCR 사용(server_ocr)</label>
+      <label>API 버전</label>
+      <div class="modes" id="vers"><button data-v="2" class="on">v2 (빠름·Haiku)</button><button data-v="1">v1 (기존)</button></div>
+      <div id="detailRow">
+        <label>detail (v2 전용 길이)</label>
+        <div class="modes" id="details"><button data-d="brief" class="on">brief (짧게)</button><button data-d="full">full (길게)</button></div>
+      </div>
+      <label>스타일</label>
+      <div class="modes" id="styles"><button data-s="1" class="on">MBTI 스타일</button><button data-s="0">기본 모드(담백)</button></div>
+      <label>이미지 (필수 — 없으면 요청 안 보냄)</label>
+      <div class="drop" id="drop">클릭해서 이미지 선택 (api-vision 백엔드에서만 실제 사용)</div>
+      <input type="file" id="file" accept="image/*" style="display:none">
+      <img id="preview">
+      <button id="send">분석 요청 ▶</button>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 흐름 + 결과 -->
+  <div class="col">
+    <div class="card">
+      <h2>① 흐름 (서버 단계별 소요시간 · LLM 호출 시점)</h2>
+      <div id="flow"><span class="meta">아직 요청 없음 — 왼쪽에서 보내보세요.</span></div>
+    </div>
+    <div class="card">
+      <h2>② 주고받은 원문</h2>
+      <details open><summary>요청 body (POST /analyze?debug=1)</summary><pre id="reqbox">—</pre></details>
+      <details style="margin-top:8px"><summary>응답 raw JSON</summary><pre id="respbox">—</pre></details>
+    </div>
+    <div class="card">
+      <h2>③ 결과 (AI 답변)</h2>
+      <div class="meta" id="resultmeta"></div>
+      <div class="result" id="result"><span class="meta">—</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let mode = "translate", imageB64 = null, mediaType = "image/png", last = null;
+let ver = 2, detailSel = "brief", styledOn = true;   // v2 + brief + MBTI 스타일 기본
+
+// v1/v2 · detail 토글
+document.getElementById("vers").addEventListener("click",e=>{
+  if(e.target.dataset.v){ ver=+e.target.dataset.v;
+    [...document.querySelectorAll("#vers button")].forEach(b=>b.classList.toggle("on",b===e.target));
+    document.getElementById("detailRow").style.display = (ver===2) ? "" : "none"; } // v2일 때만 detail 노출
+});
+document.getElementById("details").addEventListener("click",e=>{
+  if(e.target.dataset.d){ detailSel=e.target.dataset.d;
+    [...document.querySelectorAll("#details button")].forEach(b=>b.classList.toggle("on",b===e.target)); }
+});
+document.getElementById("styles").addEventListener("click",e=>{
+  if(e.target.dataset.s){ styledOn = e.target.dataset.s==="1";
+    [...document.querySelectorAll("#styles button")].forEach(b=>b.classList.toggle("on",b===e.target)); }
+});
+
+// 백엔드/페르소나 로드
+fetch("/health").then(r=>r.json()).then(d=>{
+  document.getElementById("backend").innerHTML = "backend: <b>"+d.backend+"</b>";
+});
+fetch("/personas").then(r=>r.json()).then(d=>{
+  const sel=document.getElementById("persona");
+  d.personas.forEach(p=>{const o=document.createElement("option");
+    o.value=p.code;o.textContent=p.code+" — "+p.style;sel.appendChild(o);});
+  // 퀴즈 결과(/?persona=ENFP)로 넘어오면 그 유형을 자동 선택
+  const qp=new URLSearchParams(location.search).get("persona");
+  sel.value=(qp && [...sel.options].some(o=>o.value===qp)) ? qp : "ENFP";
+});
+
+// mode 토글
+document.getElementById("modes").addEventListener("click",e=>{
+  if(e.target.dataset.m){mode=e.target.dataset.m;
+    [...document.querySelectorAll("#modes button")].forEach(b=>b.classList.toggle("on",b===e.target));}
+});
+
+// 이미지 업로드
+document.getElementById("drop").onclick=()=>document.getElementById("file").click();
+document.getElementById("file").onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  mediaType=f.type||"image/png";
+  const fr=new FileReader();
+  fr.onload=()=>{imageB64=fr.result.split(",")[1];
+    const img=document.getElementById("preview");img.src=fr.result;img.style.display="block";
+    document.getElementById("drop").textContent="✓ "+f.name+" ("+Math.round(f.size/1024)+"KB)";};
+  fr.readAsDataURL(f);
+};
+
+// 분석 요청
+let _t0=0, _stages=[], _timer=null, _bk="";
+let lastBody=null, prefetchPromise=null;   // prefetch: brief 후 full 미리 호출
+
+document.getElementById("send").onclick=runAnalyze;
+
+async function runAnalyze(){
+  if(!imageB64){   // 이미지 없으면 요청 안 보냄
+    document.getElementById("flow").innerHTML="<span class='err'>이미지를 먼저 올려주세요 (image_b64 필수).</span>";
+    return;
+  }
+  const btn=document.getElementById("send"); btn.disabled=true; btn.textContent="스트리밍 중…";
+  const ep = ver===2 ? "/v2/analyze/stream" : "/analyze/stream";
+  const body={
+    nickname:document.getElementById("nickname").value,
+    persona:document.getElementById("persona").value,
+    mode, detail:detailSel, styled:styledOn,
+    ocr_text:document.getElementById("text").value,
+    user_text:document.getElementById("usertext").value||null,
+    server_ocr:document.getElementById("serverocr").checked,
+    image_b64:imageB64, media_type:mediaType,
+    conversation_id:last?last.conversation_id:null,
+    parent_id:last&&last._reply?last.id:null,
+  };
+  lastBody=body;   // prefetch 재사용
+  document.getElementById("reqbox").textContent=JSON.stringify(
+    {...body, image_b64:"<base64 "+body.image_b64.length+"자>"},null,2);
+  document.getElementById("respbox").textContent="(스트리밍…)";
+  document.getElementById("resultmeta").textContent="";
+  const resultEl=document.getElementById("result"); resultEl.innerHTML="";
+  _t0=performance.now(); _stages=[]; let raw="";
+  _timer=setInterval(tick,100); renderStages();
+  try{
+    const r=await fetch(ep,{method:"POST",
+      headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok){let d={}; try{d=await r.json()}catch(e){}; throw new Error(d.detail||("HTTP "+r.status));}
+    const reader=r.body.getReader(), dec=new TextDecoder(); let buf="";
+    while(true){
+      const {value,done}=await reader.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      let i; while((i=buf.indexOf("\n\n"))>=0){
+        const line=buf.slice(0,i); buf=buf.slice(i+2);
+        if(!line.startsWith("data: "))continue;
+        const ev=JSON.parse(line.slice(6));
+        if(ev.type==="stage"){ if(ev.backend)_bk=ev.backend; _stages.push(ev); renderStages(); }
+        else if(ev.type==="token"){ raw+=ev.text; resultEl.innerHTML=md(raw); resultEl.scrollTop=resultEl.scrollHeight; }
+        else if(ev.type==="error"){ _stages.push({name:"❌ "+ev.detail,err:true}); renderStages(); }
+        else if(ev.type==="done"){ finishDone(ev, raw); }
+      }
+    }
+  }catch(e){
+    document.getElementById("flow").innerHTML="<span class='err'>에러: "+e.message+"</span>";
+  }finally{ clearInterval(_timer); btn.disabled=false; btn.textContent="분석 요청 ▶"; }
+}
+
+function tick(){ const e=document.getElementById("elap"); if(e) e.textContent=((performance.now()-_t0)/1000).toFixed(1); }
+
+function renderStages(){
+  let h=_stages.map(s=>{
+    const llm=(s.name||"").includes("AI 생성");
+    const mark=s.err?"":(s.done?"✓":(llm?"<span class='live'>● 생성중</span>":"…"));
+    return `<div class="step ${llm?'llm':''}"><div class="top"><b>${s.name}</b><span>${mark}</span></div></div>`;
+  }).join("");
+  h+=`<div class="total">경과 <b id="elap">0.0</b>s</div>`;
+  document.getElementById("flow").innerHTML=h;
+}
+
+function finishDone(ev, raw){
+  clearInterval(_timer);
+  // 능동 제안: 모델이 "이 답은 기본 모드가 나을 듯" 신호 → 기본 모드 버튼 강조 + 안내
+  if(ev.suggest_plain){
+    const plainBtn=[...document.querySelectorAll("#styles button")].find(b=>b.dataset.s==="0");
+    if(plainBtn){ plainBtn.style.outline="2px solid var(--warn)"; setTimeout(()=>plainBtn.style.outline="",4000); }
+  }
+  document.getElementById("resultmeta").innerHTML=
+    (ev.suggest_plain?"<div style='color:var(--warn);margin-bottom:4px'>💡 이 답은 <b>기본 모드(담백)</b>가 더 나을 수 있어요 — 위 토글로 전환</div>":"")+
+    "id <b>"+ev.id+"</b> · conv <b>"+ev.conversation_id.slice(0,8)+"</b>"+
+    (ev.parent_id?" · ↩ reply to <b>"+ev.parent_id+"</b>":"")+
+    " · ocr:"+ (ev.ocr_source||"-") +" · "+ev.total_ms+"ms";
+  document.getElementById("respbox").textContent=JSON.stringify(
+    {id:ev.id,conversation_id:ev.conversation_id,parent_id:ev.parent_id,
+     ocr_source:ev.ocr_source,total_ms:ev.total_ms,result:(raw||"").slice(0,120)+" …(전문은 ③에)"},null,2);
+  // 구간별 소요시간 막대 (ms 가진 단계들의 누적차)
+  const timed=_stages.filter(s=>typeof s.ms==="number");
+  let prev=0, bars=[], max=1;
+  timed.forEach(s=>{ const d=Math.max(0,s.ms-prev); prev=s.ms; bars.push({name:s.name,d,llm:!!s.llm}); max=Math.max(max,d); });
+  let h=bars.map(b=>
+    `<div class="step ${b.llm?'llm':''}"><div class="top"><b>${b.name}</b><span>${Math.round(b.d)} ms</span></div>`+
+    `<div class="bar"><i style="width:${Math.max(2,b.d/max*100)}%"></i></div></div>`).join("");
+  h+=`<div class="total">총 <b>${Math.round(ev.total_ms)} ms</b> · backend <b>${_bk||"-"}</b></div>`;
+  h+=`<div class="total" style="color:var(--warn)">▲ 노란 막대 = 🤖 AI 생성 (대부분의 시간이 여기)</div>`;
+  document.getElementById("flow").innerHTML=h;
+  last={...ev,_reply:false}; showReply(ev);
+  // prefetch: 방금 답이 brief(v2)면, 유저가 읽는 동안 full을 미리 생성해 둔다
+  prefetchPromise=null;
+  if(ver===2 && lastBody && lastBody.detail!=="full"){
+    const pf={...lastBody, detail:"full", conversation_id:ev.conversation_id, parent_id:ev.id};
+    const t0=performance.now();
+    prefetchPromise=fetch("/v2/analyze",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify(pf)}).then(r=>r.ok?r.json():null).then(f=>{ if(f)f._pfStart=t0; return f; }).catch(()=>null);
+  }
+}
+
+function showReply(d){
+  const rb=document.getElementById("replybar");
+  rb.style.display="block";
+  rb.innerHTML="이어서 대화? conv <b>"+d.conversation_id.slice(0,8)+"</b> · "+
+    "<button class='mini' id='moreBtn'>＋ 더 자세히</button> "+
+    "<button class='mini' id='replyBtn'>↩ id "+d.id+"에 reply</button> "+
+    "<button class='mini' id='newBtn'>새 대화</button>";
+  // 더 자세히 = prefetch된 full을 즉시 제공 (없으면 그때 full 호출)
+  document.getElementById("moreBtn").onclick=async()=>{
+    if(prefetchPromise){
+      const mb=document.getElementById("moreBtn"); mb.disabled=true; mb.textContent="가져오는 중…";
+      const tClick=performance.now();
+      const f=await prefetchPromise;
+      if(f){
+        const wait=Math.round(performance.now()-tClick);
+        document.getElementById("result").innerHTML=md(f.result||"");
+        document.getElementById("resultmeta").innerHTML=
+          `⚡ <b>prefetch</b> 제공 · 클릭 후 대기 <b>${wait} ms</b> · full 생성 ${f.ms_total} ms(미리 끝남) · id ${f.id}`;
+        document.getElementById("respbox").textContent=JSON.stringify(f,null,2);
+        prefetchPromise=null; last={...f,_reply:false}; showReply(f);
+        return;
+      }
+      mb.disabled=false; mb.textContent="＋ 더 자세히";
+    }
+    // fallback: prefetch 없으면 지금 full reply 호출(스트리밍)
+    last._reply=true; ver=2; detailSel="full";
+    [...document.querySelectorAll("#vers button")].forEach(b=>b.classList.toggle("on",b.dataset.v==="2"));
+    document.getElementById("detailRow").style.display="";
+    [...document.querySelectorAll("#details button")].forEach(b=>b.classList.toggle("on",b.dataset.d==="full"));
+    document.getElementById("usertext").value="더 자세히 설명해줘";
+    runAnalyze();
+  };
+  document.getElementById("replyBtn").onclick=()=>{last._reply=true;
+    rb.innerHTML="✓ id "+d.id+" 에 reply 모드 — 보내면 이전 맥락 반영.";};
+  document.getElementById("newBtn").onclick=()=>{last=null;rb.style.display="none";};
+}
+
+// markdown-lite (헤더/볼드/표/인용/구분선/리스트)
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function md(t){
+  const lines=esc(t).split("\n"); let out=[],i=0;
+  while(i<lines.length){
+    let l=lines[i];
+    if(/^\|.*\|/.test(l)){ // table block
+      const tb=[]; while(i<lines.length&&/^\|.*\|/.test(lines[i])){tb.push(lines[i]);i++;}
+      out.push(table(tb)); continue;
+    }
+    if(/^### /.test(l)) out.push("<h3>"+inl(l.slice(4))+"</h3>");
+    else if(/^## /.test(l)) out.push("<h2>"+inl(l.slice(3))+"</h2>");
+    else if(/^# /.test(l)) out.push("<h2>"+inl(l.slice(2))+"</h2>");
+    else if(/^> /.test(l)) out.push("<blockquote>"+inl(l.slice(2))+"</blockquote>");
+    else if(/^---+$/.test(l)) out.push("<hr>");
+    else if(/^[-*] /.test(l)) out.push("<div>• "+inl(l.slice(2))+"</div>");
+    else out.push(l.trim()?"<div>"+inl(l)+"</div>":"<div style='height:6px'></div>");
+    i++;
+  }
+  return out.join("");
+}
+function inl(s){return s.replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/`(.+?)`/g,"<code>$1</code>");}
+function table(rows){
+  const cells=r=>r.replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+  let h="<table>";
+  rows.forEach((r,idx)=>{
+    if(/^\|[\s:|-]+\|?$/.test(r))return; // separator
+    const tag=idx===0?"th":"td";
+    h+="<tr>"+cells(r).map(c=>"<"+tag+">"+inl(c)+"</"+tag+">").join("")+"</tr>";
+  });
+  return h+"</table>";
+}
+
+// 내 오늘 요약 보기 (입력된 닉네임 기반)
+document.getElementById("mysum").onclick=()=>{
+  const nick=document.getElementById("nickname").value.trim();
+  if(!nick){ alert("닉네임을 입력하세요"); return; }
+  showMySummary(nick, false);
+};
+async function showMySummary(nick, refresh){
+  let ov=document.getElementById("sumov");
+  if(!ov){
+    ov=document.createElement("div"); ov.id="sumov";
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px";
+    ov.onclick=e=>{if(e.target===ov)ov.style.display="none";};
+    ov.innerHTML='<div id="sumbox" style="background:#141925;border:1px solid #243044;border-radius:12px;max-width:560px;width:100%;padding:18px;color:#e6edf3;max-height:84vh;overflow:auto"></div>';
+    document.body.appendChild(ov);
+  }
+  ov.style.display="flex";
+  const box=document.getElementById("sumbox");
+  box.innerHTML=`<b>📋 ${nick} 요약</b><p style="color:#8aa0b6">불러오는 중…</p>`;
+  let d; try{ d=await (await fetch(`/users/${encodeURIComponent(nick)}/summary`+(refresh?"?refresh=true":""))).json(); }
+  catch(e){ box.innerHTML+="<p style='color:#ff6b6b'>로드 실패</p>"; return; }
+  const s=d.summary||{}, tr=s.translate||{count:0,topics:[]}, ex=s.explain||{count:0,topics:[]};
+  const li=a=>(a&&a.length)?("<ul style='margin:4px 0 0 16px'>"+a.map(t=>`<li>${md0(t)}</li>`).join("")+"</ul>"):"<span style='opacity:.5'>없음</span>";
+  box.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b>📋 ${md0(nick)} — ${d.date}</b>
+      <span style="cursor:pointer;color:#8aa0b6" onclick="document.getElementById('sumov').style.display='none'">✕</span></div>
+    <div style="color:#8aa0b6;font-size:12.5px;margin:6px 0">작업 ${d.conversations??d.total}건(메시지 ${d.total}) · ${d.cached?"💾 캐시":"🆕 생성"} · ${md0(d.model||"-")}
+      <button class="mini" style="margin-left:6px" onclick="showMySummary('${md0(nick)}',true)">↻</button></div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:10px">${md0(s.headline||"")}</div>
+    <div style="margin-bottom:8px"><b>번역 (${tr.count})</b>${li(tr.topics)}</div>
+    <div><b>설명 (${ex.count})</b>${li(ex.topics)}</div>`;
+}
+function md0(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+</script>
+</body>
+</html>

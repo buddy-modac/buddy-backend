@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DB 관리 — AI Image Assistant</title>
+<style>
+  :root{--bg:#0f1420;--card:#1a2030;--line:#2a3346;--txt:#e6edf3;--mut:#8b97a7;
+        --acc:#5b9dff;--ok:#3fb37f;--del:#ff7a7a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:13px}
+  header{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0}
+  .pill{font-size:12px;padding:3px 9px;border-radius:20px;background:#243049;color:var(--mut)}
+  .pill a{color:inherit;text-decoration:none}
+  .bar{padding:12px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  input,select{background:#0d1220;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:7px 10px;font-size:13px}
+  button{background:#243049;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:7px 11px;cursor:pointer;font-size:12px}
+  button.acc{background:var(--acc);color:#fff;border-color:var(--acc)}
+  button.del{background:transparent;color:var(--del);border-color:var(--del)}
+  button:hover{filter:brightness(1.1)}
+  .count{color:var(--mut);margin-left:auto}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#1a2030;position:sticky;top:0;color:var(--mut);font-weight:600;z-index:1}
+  tr:hover td{background:#161d2c}
+  td.snip{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut)}
+  .tag{font-size:11px;padding:1px 6px;border-radius:4px;background:#243049;color:var(--acc)}
+  .src-server{color:var(--ok)} .src-client{color:var(--mut)}
+  .wrap{padding:0 18px 40px}
+  /* detail modal */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:12px;max-width:680px;width:100%;max-height:86vh;overflow:auto;padding:18px}
+  .modal h3{margin:0 0 10px}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;font-size:12.5px;margin-bottom:10px}
+  .kv b{color:var(--mut);font-weight:600}
+  .modal pre{background:#0d1220;border:1px solid var(--line);border-radius:7px;padding:10px;white-space:pre-wrap;word-break:break-word;font-size:12.5px;max-height:280px;overflow:auto}
+  .modal img{max-width:100%;max-height:220px;border:1px solid var(--line);border-radius:7px;margin-top:6px}
+  .x{float:right;cursor:pointer;color:var(--mut);font-size:18px}
+  .empty{color:var(--mut);padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🗄️ DB 관리 — requests</h1>
+  <span class="pill"><a href="/">분석</a></span>
+  <span class="pill"><a href="/quiz-ui">퀴즈</a></span>
+  <span class="pill"><a href="/api">API</a></span>
+  <span class="pill" id="dbinfo">…</span>
+</header>
+
+<div class="bar">
+  <input id="fnick" placeholder="nickname 필터" style="width:130px">
+  <select id="fpersona"><option value="">persona 전체</option></select>
+  <select id="fmode"><option value="">mode 전체</option><option>translate</option><option>explain</option></select>
+  <select id="fver"><option value="">버전 전체</option><option value="1">v1</option><option value="2">v2</option></select>
+  <select id="fmodel"><option value="">모델 전체</option><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option><option value="opus">Opus</option><option value="gemini">Gemini</option><option value="gpt">OpenAI</option></select>
+  <select id="focr"><option value="">OCR출처 전체</option><option value="client">client</option><option value="server">server</option></select>
+  <select id="fstyled"><option value="">스타일 전체</option><option value="1">MBTI 스타일</option><option value="0">기본 모드</option></select>
+  <button class="acc" id="reload">조회 ↻</button>
+  <button id="clearf">필터 초기화</button>
+  <button id="sumbtn">📋 오늘 요약</button>
+  <button id="prev">◀ 이전</button>
+  <button id="next">다음 ▶</button>
+  <span class="count" id="count"></span>
+</div>
+
+<div class="wrap">
+  <table id="tbl">
+    <thead><tr>
+      <th>id</th><th>시각(KST)</th><th>IP</th><th>nickname</th><th>persona</th><th>mode</th>
+      <th>ver</th><th>detail</th><th>스타일</th><th>모델</th><th>img</th><th>OCR(ms)</th><th>LLM(ms)</th><th>OCR출처</th><th>text(OCR)</th><th>user_text</th><th>result</th><th></th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">데이터 없음</div>
+</div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+
+<script>
+let limit=50, offset=0, total=0;
+
+document.getElementById("reload").onclick=()=>{offset=0;load();};
+document.getElementById("prev").onclick=()=>{if(offset>=limit){offset-=limit;load();}};
+document.getElementById("next").onclick=()=>{if(offset+limit<total){offset+=limit;load();}};
+document.getElementById("ov").onclick=e=>{if(e.target.id==="ov")closeModal();};
+// 셀렉트 바꾸면 즉시 조회
+["fpersona","fmode","fver","fmodel","focr","fstyled"].forEach(id=>document.getElementById(id).onchange=()=>{offset=0;load();});
+document.getElementById("clearf").onclick=()=>{
+  document.getElementById("fnick").value="";
+  ["fpersona","fmode","fver","fmodel","focr","fstyled"].forEach(id=>document.getElementById(id).value="");
+  offset=0;load();
+};
+// persona 드롭다운 채우기
+fetch("/personas").then(r=>r.json()).then(d=>{
+  const s=document.getElementById("fpersona");
+  (d.personas||[]).forEach(p=>{const o=document.createElement("option");o.value=p.code;o.textContent=p.code;s.appendChild(o);});
+}).catch(()=>{});
+
+async function load(){
+  const nick=document.getElementById("fnick").value.trim();
+  const mode=document.getElementById("fmode").value;
+  let q=`/messages?limit=${limit}&offset=${offset}`;
+  if(nick)q+=`&nickname=${encodeURIComponent(nick)}`;
+  if(mode)q+=`&mode=${mode}`;
+  const persona=document.getElementById("fpersona").value;
+  const ver=document.getElementById("fver").value;
+  const model=document.getElementById("fmodel").value;
+  const ocr=document.getElementById("focr").value;
+  const styled=document.getElementById("fstyled").value;
+  if(persona)q+=`&persona=${persona}`;
+  if(ver)q+=`&version=${ver}`;
+  if(model)q+=`&model=${encodeURIComponent(model)}`;
+  if(ocr)q+=`&ocr_source=${ocr}`;
+  if(styled!=="")q+=`&styled=${styled}`;
+  const d=await (await fetch(q)).json();
+  total=d.total;
+  document.getElementById("count").textContent=
+    `${total}건 중 ${total?offset+1:0}–${Math.min(offset+limit,total)}`;
+  const tb=document.getElementById("rows"); tb.innerHTML="";
+  document.getElementById("empty").style.display=d.messages.length?"none":"block";
+  d.messages.forEach(m=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${m.id}</td>
+      <td style="white-space:nowrap">${kst(m.created_at)}</td>
+      <td style="white-space:nowrap">${esc(m.client_ip||"-")}</td>
+      <td>${esc(m.nickname)}</td>
+      <td><span class="tag">${m.persona}</span></td>
+      <td>${m.mode}</td>
+      <td>${m.api_version?("v"+m.api_version):"-"}</td>
+      <td>${m.detail||"-"}</td>
+      <td>${m.styled==null?"-":(m.styled?"스타일":"기본")}</td>
+      <td style="white-space:nowrap" title="${esc(m.model||"")}">${modelShort(m.model)}</td>
+      <td style="white-space:nowrap">${imgCell(m.img_len)}</td>
+      <td class="num">${m.ms_ocr!=null?m.ms_ocr:"-"}</td>
+      <td class="num">${m.ms_llm!=null?m.ms_llm:"-"}</td>
+      <td class="src-${m.ocr_source||'client'}">${m.ocr_source||"-"}</td>
+      <td class="snip">${esc(m.text)}</td>
+      <td class="snip">${esc(m.user_text||"")}</td>
+      <td class="snip">${esc(m.result)}</td>
+      <td style="white-space:nowrap">
+        <button onclick="view(${m.id})">보기</button>
+        <button class="del" onclick="del(${m.id})">삭제</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function view(id){
+  const m=await (await fetch(`/message/${id}?include_image=true`)).json();
+  const img=m.image_b64?`<div><b>image</b></div><img src="data:${m.media_type||'image/png'};base64,${m.image_b64}">`:"";
+  document.getElementById("modal").innerHTML=`
+    <span class="x" onclick="closeModal()">✕</span>
+    <h3>메시지 #${m.id}</h3>
+    <div class="kv">
+      <b>conversation_id</b><span>${m.conversation_id||"-"}</span>
+      <b>parent_id</b><span>${m.parent_id??"null"}</span>
+      <b>nickname</b><span>${esc(m.nickname)}</span>
+      <b>persona / mode</b><span>${m.persona} / ${m.mode}</span>
+      <b>API 버전 / detail</b><span>${m.api_version?("v"+m.api_version):"-"} / ${m.detail||"-"}</span>
+      <b>스타일</b><span>${m.styled==null?"-":(m.styled?"MBTI 스타일":"기본 모드")}</span>
+      <b>모델</b><span>${esc(m.model||"-")}</span>
+      <b>client_ip</b><span>${esc(m.client_ip||"-")}</span>
+      <b>소요(ms)</b><span>OCR ${m.ms_ocr!=null?m.ms_ocr:"-"} · LLM ${m.ms_llm!=null?m.ms_llm:"-"} · 총 ${m.ms_total!=null?m.ms_total:"-"}</span>
+      <b>ocr_source</b><span>${m.ocr_source||"-"}</span>
+      <b>시각</b><span>${kst(m.created_at)} KST &nbsp;<span style="opacity:.5">(${m.created_at} UTC)</span></span>
+    </div>
+    <div><b>text (OCR)</b></div><pre>${esc(m.text)||"(없음)"}</pre>
+    <div><b>user_text</b></div><pre>${esc(m.user_text)||"(없음)"}</pre>
+    <div><b>result (AI 답변)</b></div><pre>${esc(m.result)||"(없음)"}</pre>
+    ${img}
+    <div style="margin-top:12px;text-align:right">
+      <button class="del" onclick="del(${m.id},true)">이 메시지 삭제</button></div>`;
+  document.getElementById("ov").style.display="flex";
+}
+function closeModal(){document.getElementById("ov").style.display="none";}
+
+// 닉네임 일별 요약 보기 (nickname 필터 사용)
+document.getElementById("sumbtn").onclick=()=>{
+  const nick=document.getElementById("fnick").value.trim();
+  if(!nick){ alert("nickname 필터에 닉네임을 입력하세요 (그 유저의 오늘 요약을 봅니다)"); return; }
+  showSummary(nick, "", false);
+};
+async function showSummary(nick, date, refresh){
+  document.getElementById("modal").innerHTML=`<span class="x" onclick="closeModal()">✕</span><h3>📋 ${esc(nick)} 요약</h3><p>불러오는 중…</p>`;
+  document.getElementById("ov").style.display="flex";
+  let q=`/users/${encodeURIComponent(nick)}/summary`; const ps=[];
+  if(date)ps.push("date="+date); if(refresh)ps.push("refresh=true");
+  if(ps.length)q+="?"+ps.join("&");
+  let d; try{ d=await (await fetch(q)).json(); }catch(e){ document.getElementById("modal").innerHTML+=`<p class="err">로드 실패</p>`; return; }
+  const s=d.summary||{}, tr=s.translate||{count:0,topics:[]}, ex=s.explain||{count:0,topics:[]};
+  const li=a=>(a&&a.length)?("<ul style='margin:4px 0 0 16px'>"+a.map(t=>`<li>${esc(t)}</li>`).join("")+"</ul>"):"<span style='opacity:.5'>없음</span>";
+  document.getElementById("modal").innerHTML=`
+    <span class="x" onclick="closeModal()">✕</span>
+    <h3>📋 ${esc(nick)} — ${d.date} 요약</h3>
+    <div style="color:var(--mut);font-size:12.5px;margin-bottom:8px">
+      작업 ${d.conversations??d.total}건(메시지 ${d.total}) · ${d.cached?"💾 캐시":"🆕 새로 생성"} · 모델 ${esc(d.model||"-")}
+      <button class="mini" style="margin-left:8px" onclick="showSummary('${esc(nick)}','${d.date}',true)">↻ 새로고침</button>
+    </div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:10px">${esc(s.headline||"")}</div>
+    <div class="kv">
+      <b>번역 (${tr.count})</b><span>${li(tr.topics)}</span>
+      <b>설명 (${ex.count})</b><span>${li(ex.topics)}</span>
+    </div>`;
+}
+
+async function del(id, fromModal){
+  if(!confirm(`메시지 #${id} 를 삭제할까요? (되돌릴 수 없음)`))return;
+  const r=await fetch(`/message/${id}`,{method:"DELETE"});
+  if(r.ok){ if(fromModal)closeModal(); load(); }
+  else alert("삭제 실패: "+r.status);
+}
+
+function esc(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+// 저장은 UTC(tz 없는 ISO) → 화면은 KST로 변환해서 표시
+// 이미지 칸: 없음 / 더미(초소형) / 실제 크기(KB). base64 len → bytes ≈ len*0.75
+// 모델 id → 짧은 표기 (추후 gemini/openai 대비)
+function modelShort(m){
+  if(!m) return "-";
+  if(/haiku/i.test(m)) return "Haiku";
+  if(/sonnet/i.test(m)) return "Sonnet";
+  if(/opus/i.test(m)) return "Opus";
+  if(/gemini/i.test(m)) return "Gemini";
+  if(/gpt|openai|o\d/i.test(m)) return "OpenAI";
+  return m;
+}
+function imgCell(len){
+  if(!len) return "-";
+  const kb = len*0.75/1024;
+  if(kb < 0.6) return `<span title="더미/초소형 (${len}자)" style="opacity:.6">▫ 더미</span>`;
+  return `🖼️ ${kb.toFixed(1)}KB`;
+}
+function kst(iso){
+  if(!iso) return "-";
+  const d = new Date(/[Z+]/.test(iso) ? iso : iso + "Z");
+  if(isNaN(d)) return iso;
+  return d.toLocaleString("sv-SE",{timeZone:"Asia/Seoul"}).replace("T"," ").slice(0,19);
+}
+
+fetch("/health").then(r=>r.json()).then(d=>{document.getElementById("dbinfo").textContent="backend: "+d.backend;});
+load();
+</script>
+</body>
+</html>

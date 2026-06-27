@@ -1,0 +1,218 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v1 vs v2 비교 테스트 (localhost 전용)</title>
+<style>
+  :root{--bg:#0b0e14;--card:#141925;--line:#243044;--fg:#e6edf3;--mut:#8aa0b6;--acc:#4f9cff;--warn:#ffb454;--ok:#3ad29f}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:20px}
+  h1{font-size:18px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 16px;font-size:12.5px}
+  a{color:var(--acc)}
+  .wrap{max-width:1100px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}
+  select,input,textarea{width:100%;background:#0d1220;border:1px solid var(--line);color:var(--fg);border-radius:7px;padding:8px;font:inherit}
+  textarea{min-height:54px;resize:vertical}
+  .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:200px}
+  .modes button{background:#0d1220;border:1px solid var(--line);color:var(--fg);padding:7px 12px;border-radius:7px;cursor:pointer;margin-right:6px}
+  .modes button.on{background:var(--acc);border-color:var(--acc);color:#001}
+  #run{margin-top:14px;width:100%;background:var(--ok);border:none;color:#003;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-size:15px}
+  #run:disabled{opacity:.5}
+  img#prev{max-width:220px;max-height:150px;border:1px solid var(--line);border-radius:7px;margin-top:8px;display:none}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{color:var(--mut);font-weight:600;background:#0d1220}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .win{color:var(--ok);font-weight:700}.bar{height:10px;background:var(--warn);border-radius:5px;display:inline-block;vertical-align:middle}
+  .res{white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:280px;overflow:auto}
+  .err{color:#ff6b6b}.tag{background:#0d1220;border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:12px}
+</style></head><body><div class="wrap">
+  <h1>⏱️ v1 vs v2 동시 비교 테스트 <span class="tag">localhost 전용</span></h1>
+  <p class="sub">같은 이미지·같은 mode로 <b>/analyze(v1)</b> 와 <b>/v2/analyze(v2)</b> 를 동시에 쏘고, 소요시간(OCR·LLM·총)과 결과를 나란히 비교합니다. · <a href="/">← 테스트 콘솔</a> · <a href="/admin">DB admin</a></p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>persona</label><select id="persona"></select>
+        <label>mode</label>
+        <div class="modes" id="modes"><button data-m="translate" class="on">translate</button><button data-m="explain">explain</button></div>
+        <label>비교 대상</label>
+        <div style="color:var(--mut);font-size:12.5px">v1 · v2(brief) · v2(full) <b>3개 동시</b> 실행해 비교</div>
+      </div>
+      <div>
+        <label>샘플 이미지 (server/test_images/)</label>
+        <select id="samples"><option value="">— 샘플 선택 또는 아래 업로드 —</option></select>
+        <label>또는 직접 업로드</label>
+        <input type="file" id="file" accept="image/*">
+        <img id="prev">
+      </div>
+    </div>
+    <label>ocr_text (이미지에서 뽑은 텍스트)</label>
+    <textarea id="ocr">SALE 50% OFF / Ends Friday 6PM / Members only</textarea>
+    <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="serverocr" style="width:auto"> ocr_text 비우고 서버 OCR 사용(server_ocr)</label>
+    <button id="run">▶ v1 · v2(brief·full) 동시 실행</button>
+  </div>
+
+  <div class="card" id="out" style="display:none">
+    <h3 style="margin:0 0 8px">결과 비교</h3>
+    <div id="verdict" style="margin-bottom:10px"></div>
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 4px">🔮 실제 유저 플로우 시뮬레이션 (brief → 더 자세히)</h3>
+    <p class="sub" style="margin:0 0 10px">시작 시 <b>brief</b>를 보여주고 <b>full을 백그라운드에서 미리 생성(prefetch)</b>. "더 자세히" 클릭 순간의 <b>체감 대기</b>를 prefetch vs 순차(naive)로 비교합니다. (위 폼의 이미지·persona·mode·ocr 사용)</p>
+    <button id="flowRun">▶ 플로우 시작 (brief 받기 + full prefetch)</button>
+    <div id="flowOut" style="display:none;margin-top:12px">
+      <b>① brief 응답</b> <span id="briefMeta" class="num" style="color:var(--mut)"></span>
+      <div class="res" id="briefRes"></div>
+      <div id="bgNote" style="color:var(--warn);margin:8px 0;font-size:13px"></div>
+      <div style="margin:6px 0;color:var(--mut);font-size:13px">brief 읽은 시간(dwell): <b id="dwell" class="num">0.0s</b> <span style="opacity:.6">— 오래 읽을수록 prefetch가 유리</span></div>
+      <button id="moreRun" disabled>＋ 더 자세히 (full) 클릭</button>
+      <div id="fullOut" style="display:none;margin-top:10px">
+        <table style="margin-bottom:8px"><tr><th>"더 자세히" 클릭 후 체감 대기</th><th>대기(ms)</th></tr>
+          <tr><td>순차 (prefetch 없음 = 지금 우리 동작)</td><td id="wNaive" class="num"></td></tr>
+          <tr><td><b>prefetch (백그라운드 미리 생성)</b></td><td id="wPre" class="num"></td></tr>
+          <tr><td class="win">절약</td><td id="wSave" class="win num"></td></tr></table>
+        <b>② full 응답</b>
+        <div class="res" id="fullRes"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+let mode="translate", imageB64=null, mediaType="image/png";
+
+// persona
+fetch("/personas").then(r=>r.json()).then(d=>{
+  const s=document.getElementById("persona");
+  d.personas.forEach(p=>{const o=document.createElement("option");o.value=p.code;o.textContent=p.code+" — "+p.style;s.appendChild(o);});
+  s.value="ENFP";
+});
+// 샘플 목록
+fetch("/test-images").then(r=>r.json()).then(d=>{
+  const s=document.getElementById("samples");
+  (d.images||[]).forEach(it=>{const o=document.createElement("option");o.value=it.name;o.dataset.mode=it.mode||"";o.dataset.mt=it.media_type;o.textContent=it.name+(it.mode?`  (mode=${it.mode})`:"");s.appendChild(o);});
+}).catch(()=>{});
+
+document.getElementById("modes").onclick=e=>{if(e.target.dataset.m){mode=e.target.dataset.m;[...document.querySelectorAll("#modes button")].forEach(b=>b.classList.toggle("on",b===e.target));}};
+
+function setPreview(dataUrl,label){imageB64=dataUrl.split(",")[1];const p=document.getElementById("prev");p.src=dataUrl;p.style.display="block";}
+document.getElementById("samples").onchange=async e=>{
+  const opt=e.target.selectedOptions[0]; if(!opt.value)return;
+  const blob=await (await fetch("/test-images/"+encodeURIComponent(opt.value))).blob();
+  mediaType=opt.dataset.mt||blob.type;
+  const fr=new FileReader();fr.onload=()=>setPreview(fr.result);fr.readAsDataURL(blob);
+  if(opt.dataset.mode){mode=opt.dataset.mode;[...document.querySelectorAll("#modes button")].forEach(b=>b.classList.toggle("on",b.dataset.m===mode));}
+};
+document.getElementById("file").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;mediaType=f.type||"image/png";
+  const fr=new FileReader();fr.onload=()=>setPreview(fr.result);fr.readAsDataURL(f);
+};
+
+async function callVer(path, body){
+  const t0=performance.now();
+  const r=await fetch(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const wall=Math.round(performance.now()-t0);
+  if(!r.ok){const e=await r.json().catch(()=>({detail:r.status}));return {error:e.detail||r.status, wall};}
+  const d=await r.json();return {...d, wall};
+}
+
+document.getElementById("run").onclick=async()=>{
+  if(!imageB64){alert("샘플을 고르거나 이미지를 업로드하세요");return;}
+  const btn=document.getElementById("run");btn.disabled=true;btn.textContent="실행 중…";
+  const base={nickname:"sample-test", persona:document.getElementById("persona").value, mode,
+    ocr_text:document.getElementById("ocr").value, server_ocr:document.getElementById("serverocr").checked,
+    image_b64:imageB64, media_type:mediaType};
+  const LABELS=["v1 (Sonnet)","v2 brief · Claude","v2 full · Claude","v2 brief · GPT mini","v2 full · GPT mini"];
+  try{
+    const arms=await Promise.all([
+      callVer("/analyze",    {...base, provider:"anthropic"}),
+      callVer("/v2/analyze", {...base, detail:"brief", provider:"anthropic"}),
+      callVer("/v2/analyze", {...base, detail:"full",  provider:"anthropic"}),
+      callVer("/v2/analyze", {...base, detail:"brief", provider:"openai"}),
+      callVer("/v2/analyze", {...base, detail:"full",  provider:"openai"}),
+    ]);
+    render(arms, LABELS);
+  }finally{btn.disabled=false;btn.textContent="▶ v1 · v2(Claude·GPT, brief·full) 동시 실행";}
+};
+
+function cell(v){return v==null?"-":v;}
+function msbar(v,max){if(v==null)return "-";const w=max?Math.round((v/max)*120):0;return `<span class="bar" style="width:${w}px"></span> <span class="num">${v} ms</span>`;}
+function render(arms, labels){
+  document.getElementById("out").style.display="block";
+  document.getElementById("head").innerHTML=`<th style="width:130px">항목</th>`+labels.map(l=>`<th>${l}</th>`).join("");
+  const rows=document.getElementById("rows");
+  const mx=Math.max(...arms.map(a=>(a&&!a.error)?Math.max(a.ms_total||0,a.ms_llm||0,a.ms_ocr||0):0));
+  const row=(label,fn)=>`<tr><td>${label}</td>`+arms.map((a,i)=>a.error?`<td class="err">ERR</td>`:fn(a,i)).join("")+`</tr>`;
+  rows.innerHTML=
+    row("모델/모드",(_,i)=>`<td>${labels[i]}</td>`)+
+    row("ms_ocr (서버OCR)",a=>`<td>${msbar(a.ms_ocr,mx)}</td>`)+
+    row("ms_llm (AI 생성)",a=>`<td>${msbar(a.ms_llm,mx)}</td>`)+
+    row("ms_total (서버 전체)",a=>`<td>${msbar(a.ms_total,mx)}</td>`)+
+    row("왕복(클라 체감)",a=>`<td class="num">${a.wall} ms</td>`)+
+    row("출력 길이(자)",a=>`<td class="num">${(a.result||"").length}</td>`)+
+    row("모델 id",a=>`<td style="font-size:11px">${esc(a.model||"-")}</td>`)+
+    row("결과",a=>`<td><div class="res">${a.error?("<span class='err'>"+esc(a.error)+"</span>"):esc(a.result)}</div></td>`);
+  // 판정: ms_total 최소 = 최速
+  const ok=arms.map((a,i)=>({i,t:(a&&!a.error)?(a.ms_total||a.wall):Infinity})).filter(o=>isFinite(o.t));
+  if(ok.length){
+    const minI=ok.reduce((m,o)=>o.t<m.t?o:m).i, maxT=Math.max(...ok.map(o=>o.t));
+    const x=(maxT/Math.max(1,ok.reduce((m,o)=>o.t<m.t?o:m).t)).toFixed(1);
+    document.getElementById("verdict").innerHTML=
+      `최速: <span class="win">${labels[minI]}</span> (가장 느린 것의 ${x}배, ms_total 기준)`;
+  }
+}
+function esc(s){return (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+// ---- 유저 플로우 시뮬레이션: 순차(prefetch 없음) vs prefetch ----
+let fullPromise=null, fullDoneAt=0, briefShownAt=0, dwellTimer=null;
+document.getElementById("flowRun").onclick=async()=>{
+  if(!imageB64){alert("샘플을 고르거나 이미지를 업로드하세요");return;}
+  const btn=document.getElementById("flowRun");btn.disabled=true;btn.textContent="brief 생성 중…";
+  document.getElementById("flowOut").style.display="block";
+  document.getElementById("fullOut").style.display="none";
+  document.getElementById("moreRun").disabled=true;
+  clearInterval(dwellTimer); document.getElementById("dwell").textContent="0.0s";
+  const base={nickname:"flow-sim", persona:document.getElementById("persona").value, mode,
+    ocr_text:document.getElementById("ocr").value, server_ocr:document.getElementById("serverocr").checked,
+    image_b64:imageB64, media_type:mediaType};
+  // full prefetch 즉시 시작(독립 full — brief 안 기다림)
+  fullDoneAt=0;
+  const t0=performance.now();
+  fullPromise=callVer("/v2/analyze",{...base,detail:"full"}).then(f=>{fullDoneAt=performance.now();return f;});
+  fullPromise.then(()=>{
+    document.getElementById("bgNote").innerHTML=`🟢 백그라운드 full 생성 완료 (${Math.round(fullDoneAt-t0)} ms) — 지금 "더 자세히" 누르면 즉시`;
+  });
+  document.getElementById("bgNote").innerHTML="🟡 백그라운드에서 full 생성 중… (이걸 미리 돌려두는 게 prefetch)";
+  // brief
+  const b=await callVer("/v2/analyze",{...base,detail:"brief"});
+  document.getElementById("briefMeta").textContent= b.error?("에러: "+b.error):`ms_total ${b.ms_total} · ${(b.result||"").length}자`;
+  document.getElementById("briefRes").textContent= b.error?"":b.result;
+  document.getElementById("moreRun").disabled=false;
+  // brief 보인 순간부터 dwell(읽은 시간) 카운트 시작
+  briefShownAt=performance.now();
+  dwellTimer=setInterval(()=>{document.getElementById("dwell").textContent=((performance.now()-briefShownAt)/1000).toFixed(1)+"s";},100);
+  btn.disabled=false;btn.textContent="▶ 다시 플로우 시작";
+};
+
+document.getElementById("moreRun").onclick=async()=>{
+  clearInterval(dwellTimer);
+  const dwell=Math.round(performance.now()-briefShownAt);     // 실제 읽은 시간
+  const btn=document.getElementById("moreRun");btn.disabled=true;btn.textContent="가져오는 중…";
+  const tClick=performance.now();
+  const f=await fullPromise;                                    // 이미 끝났으면 즉시, 아니면 남은 만큼 대기
+  const prefetchWait=Math.round(performance.now()-tClick);      // prefetch 시 클릭 후 실제 대기
+  const naiveWait=f.ms_total||0;                                // prefetch 없이 클릭 후 새로 생성했다면
+  const saved=naiveWait-prefetchWait;
+  document.getElementById("fullOut").style.display="block";
+  document.getElementById("fullRes").textContent=f.error?("에러: "+f.error):f.result;
+  document.getElementById("wNaive").textContent=naiveWait+" ms";
+  document.getElementById("wPre").textContent=prefetchWait+" ms"+(prefetchWait<50?" (이미 완성)":" (남은 생성 대기)");
+  document.getElementById("wSave").textContent=(saved>0?("−"+saved+" ms 빠름"):"차이 없음")+`  · 읽은 시간 ${(dwell/1000).toFixed(1)}s`;
+  btn.disabled=false;btn.textContent="＋ 더 자세히 (full) 클릭";
+};
+</script></div></body></html>
+</script></div></body></html>

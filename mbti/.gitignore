@@ -1,0 +1,46 @@
+# user-filled local persona sources (never shipped)
+personas/local/QUESTIONS.py
+personas/local/CHARACTER_SOURCES.py
+
+# local session scratch: gathered questionnaire text, analysis scripts + reports,
+# and saved/tuned personas (all local-only, regenerable)
+personas/local/items_raw_*.txt
+personas/local/run_*.py
+personas/local/*_2026*.md
+personas/local/*_tuned.json
+personas/local/*_se.json
+personas/local/namuwiki_*.json
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# local caches
+*.db
+persona_cache.db
+
+# virtualenv & OS cruft
+.venv/
+venv/
+.DS_Store
+
+# generated render artifacts
+benchmarks/_pg*.png
+docs/_pg*.png
+
+# claude local/runtime (personal, not shared)
+.claude/settings.local.json
+.claude/*.lock
+
+# secrets / local env (절대 커밋 금지)
+.env
+.env.local
+**/.env.local
+
+# IDE
+.idea/
+.vscode/
