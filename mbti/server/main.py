@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from pydantic import BaseModel
 
@@ -67,10 +68,17 @@ from .ai_backend import (get_backend, get_backend_for, pick_backend, v2_params,
                          text_complete, PLAIN_MARKER, MODEL as DEFAULT_MODEL)
 from .ocr import extract_text_from_image, OCRNotConfigured
 from .quiz import build_router as build_quiz_router, init_quiz_db
+from .clipboard import build_router as build_clipboard_router, init_clipboard_db
 
 DB = os.path.join(os.path.dirname(__file__), "app.db")
 
 app = FastAPI(title="AI Image Assistant API")
+
+# 공개 클립보드/갤러리는 교차 출처 프런트에서 호출될 수 있음 → CORS 허용.
+# (allow_credentials 는 기본 False 유지 — "*" 와 credentials 동시 사용 불가)
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+)
 
 
 # ---------- DB ----------
@@ -137,6 +145,8 @@ def init_db():
 init_db()
 init_quiz_db(db)
 app.include_router(build_quiz_router(db))
+init_clipboard_db(db)
+app.include_router(build_clipboard_router(db))
 
 
 # ---------- 모델 ----------
@@ -667,6 +677,11 @@ def console():
 @app.get("/quiz-ui")
 def quiz_console():
     return _serve("quiz_console.html")       # MBTI 퀴즈 테스트 페이지
+
+
+@app.get("/clipboard-ui")
+def clipboard_console():
+    return _serve("clipboard.html")          # 이미지 클립보드(갤러리) 데모 페이지
 
 
 # ---------- 샘플 테스트 이미지 (server/test_images/) ----------
