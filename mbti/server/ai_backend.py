@@ -25,6 +25,10 @@ OPENAI_FAST = os.environ.get("SERVER_OPENAI_MODEL_FAST", OPENAI_MODEL)
 # Gemini: 무료 티어(Google AI Studio). 2.5 Flash 는 비전 지원. v1·v2 동일 모델 사용.
 GEMINI_MODEL = os.environ.get("SERVER_GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_FAST = os.environ.get("SERVER_GEMINI_MODEL_FAST", GEMINI_MODEL)
+# Gemini 2.5 는 '사고(thinking)' 모델이라 답 전에 thinking 토큰을 소비 → 짧은 max_tokens 캡에선
+# 생각하다 한도를 다 써 답이 잘린다. 기본 0 으로 thinking 끔(짧은 번역/설명엔 불필요·빠름).
+# 음수(-1)면 동적 thinking 허용. SERVER_GEMINI_THINKING_BUDGET 로 조정.
+GEMINI_THINKING_BUDGET = int(os.environ.get("SERVER_GEMINI_THINKING_BUDGET", "0"))
 CACHE_PATH = os.path.join(os.path.dirname(__file__), "server_cache.db")
 
 # v2 정책: mode×detail → 출력 토큰 캡(바닥값) / 이미지 포함 여부.
@@ -304,10 +308,14 @@ class GeminiBackend:
         parts = [{"text": user}]
         if send_img:
             parts.append({"inline_data": {"mime_type": media_type, "data": image_b64}})
+        gen_cfg = {"maxOutputTokens": max_tokens}
+        # thinkingBudget>=0 일 때만 명시 전달(0=끔). 음수면 모델 기본(동적 thinking)에 맡김.
+        if GEMINI_THINKING_BUDGET >= 0:
+            gen_cfg["thinkingConfig"] = {"thinkingBudget": GEMINI_THINKING_BUDGET}
         return {
             "system_instruction": {"parts": [{"text": _system_prompt(persona, styled)}]},
             "contents": [{"role": "user", "parts": parts}],
-            "generationConfig": {"maxOutputTokens": max_tokens},
+            "generationConfig": gen_cfg,
         }
 
     def interpret(self, persona, mode, ocr_text, image_b64, media_type, parent_context,

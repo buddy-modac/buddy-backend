@@ -30,17 +30,21 @@ if (-not (Test-Path $envFile)) {
   Copy-Item (Join-Path $PSScriptRoot "server\.env.example") $envFile
   Write-Host "[i] server\.env.local 생성됨 — 실제 키를 넣고 다시 실행하세요." -ForegroundColor Yellow
 }
-foreach ($line in Get-Content $envFile) {
+foreach ($line in Get-Content $envFile -Encoding UTF8) {
   if ($line -match '^\s*#') { continue }
   if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
     $name = $matches[1]; $val = $matches[2].Trim()
+    # 플레이스홀더(빈 값 · 한글 견본 · '여기에' 포함)는 환경에 넣지 않는다.
+    # → auto 라우팅과 서버가 '진짜 키'만 인식하도록. (API 키는 항상 ASCII)
+    if ([string]::IsNullOrWhiteSpace($val) -or $val -match '[^\x00-\x7F]' -or $val -like '*여기에*') { continue }
     Set-Item -Path "Env:$name" -Value $val
   }
 }
 
 function Has-Key([string]$name) {
+  # 위 로더가 플레이스홀더는 환경에 안 넣으므로, 값이 있으면 진짜 키.
   $v = (Get-Item "Env:$name" -ErrorAction SilentlyContinue).Value
-  return -not ([string]::IsNullOrWhiteSpace($v) -or $v -like "*여기에*")
+  return -not [string]::IsNullOrWhiteSpace($v)
 }
 
 function Need-Key([string]$name, [string]$hint) {
