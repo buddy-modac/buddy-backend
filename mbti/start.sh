@@ -62,9 +62,22 @@ check_key() {  # $1=키 이름, $2=발급 URL
       ;;
   esac
 }
-check_key ANTHROPIC_API_KEY "https://console.anthropic.com → API Keys"
-check_key OPENAI_API_KEY    "https://platform.openai.com → API keys"
-echo "▶ ✓ API 키 2개 확인됨 (Anthropic + OpenAI)"
+# auto 라우팅은 가진 키로 폴백하므로, 세 키 중 최소 하나만 있으면 됩니다.
+#   Anthropic+OpenAI → F형 Claude / T형 GPT,  Gemini(무료) → 전부 Gemini, 빈 자리는 Gemini 폴백.
+has_some() { local v; v="$(read_key "$1")"; case "$v" in ""|*여기에*) return 1;; *) return 0;; esac; }
+if ! has_some ANTHROPIC_API_KEY && ! has_some OPENAI_API_KEY && ! has_some GEMINI_API_KEY; then
+  echo
+  echo "✗ AI 키가 하나도 없습니다. server/.env.local 에 아래 중 하나라도 넣고 다시 실행하세요:"
+  echo "    ANTHROPIC_API_KEY  (https://console.anthropic.com → API Keys)"
+  echo "    OPENAI_API_KEY     (https://platform.openai.com → API keys)"
+  echo "    GEMINI_API_KEY     (https://aistudio.google.com → Get API key · 무료)"
+  exit 1
+fi
+_have=""
+has_some ANTHROPIC_API_KEY && _have="${_have}Claude "
+has_some OPENAI_API_KEY && _have="${_have}GPT "
+has_some GEMINI_API_KEY && _have="${_have}Gemini "
+echo "▶ ✓ AI 키 확인됨 (보유: ${_have})"
 
 # 6) 기동 — run.sh auto 가 .env.local 로드 + 최종 검증 + URL 배너 + uvicorn 실행
 #    (F형→Claude, T형→GPT 페르소나 라우팅, 두 키 사용)
