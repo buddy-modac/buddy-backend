@@ -2,7 +2,9 @@
   • SubscriptionBackend — claude -p (구독, 키 불필요). 텍스트 기반(이미지는 비전모델 안 감).
   • APIVisionBackend     — Anthropic Messages API + base64 이미지(진짜 비전). ANTHROPIC_API_KEY 필요.
   • OpenAIBackend        — OpenAI Chat Completions + base64 이미지(비전). OPENAI_API_KEY 필요.
-선택: SERVER_AI_BACKEND = "subscription"(기본) | "api"(anthropic) | "openai".
+  • GeminiBackend        — Google Gemini(generativelanguage) + inline 이미지(비전). GEMINI_API_KEY 필요(무료 티어 가능).
+선택: SERVER_AI_BACKEND = "subscription"(기본) | "api"(anthropic) | "openai" | "gemini" | "auto".
+  auto = 가진 키로 자동 라우팅(F→Claude, T→GPT, 유료 키 없으면 Gemini, 그것도 없으면 subscription).
 
 v1/v2 공용: interpret/stream_interpret 가 model·max_tokens·include_image·detail 오버라이드를 받음.
   v1 = 기본값(default·2000·이미지O).  v2 = v2_params()로 fast·캡·이미지정책·detail.
@@ -20,6 +22,9 @@ HAIKU = os.environ.get("SERVER_MODEL_FAST", "claude-haiku-4-5-20251001")  # v2 �
 # OpenAI: 5.4 mini 단일 모델 사용 (v1·v2 동일). 정확한 API id가 다르면 env로 교정.
 OPENAI_MODEL = os.environ.get("SERVER_OPENAI_MODEL", "gpt-5.4-mini")
 OPENAI_FAST = os.environ.get("SERVER_OPENAI_MODEL_FAST", OPENAI_MODEL)
+# Gemini: 무료 티어(Google AI Studio). 2.5 Flash 는 비전 지원. v1·v2 동일 모델 사용.
+GEMINI_MODEL = os.environ.get("SERVER_GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_FAST = os.environ.get("SERVER_GEMINI_MODEL_FAST", GEMINI_MODEL)
 CACHE_PATH = os.path.join(os.path.dirname(__file__), "server_cache.db")
 
 # v2 정책: mode×detail → 출력 토큰 캡(바닥값) / 이미지 포함 여부.
@@ -262,6 +267,90 @@ class OpenAIBackend:
                         yield t
 
 
+class GeminiBackend:
+    """Google Gemini (generativelanguage API) + inline 이미지(비전). 같은 Phase 2 시스템 프롬프트 사용.
+    무료 티어(AI Studio) 키로 동작. 모델은 URL 에 들어가고 system 은 system_instruction 으로 전달.
+    모델 매핑: v1(model=None)→GEMINI_MODEL, v2 fast 신호('haiku'/'fast')→GEMINI_FAST,
+    명시적 gemini id 는 그대로."""
+    name = "gemini"
+    _BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+
+    def __init__(self, api_key: str):
+        self._key = api_key
+
+    def model_for(self, requested):
+        if not requested:
+            return GEMINI_MODEL
+        r = requested.lower()
+        if r.startswith("gemini"):
+            return requested
+        if "haiku" in r or "fast" in r:
+            return GEMINI_FAST
+        return GEMINI_MODEL
+
+    def _url(self, model, stream):
+        method = "streamGenerateContent" if stream else "generateContent"
+        suffix = "?alt=sse" if stream else ""
+        return f"{self._BASE}/{model}:{method}{suffix}"
+
+    def _headers(self):
+        return {"x-goog-api-key": self._key, "content-type": "application/json"}
+
+    def _payload(self, persona, mode, ocr_text, image_b64, media_type, parent_context,
+                 user_text, max_tokens, include_image, detail, styled=True):
+        send_img = include_image and bool(image_b64)
+        user = _user_message(mode, ocr_text, parent_context, has_image=send_img,
+                             user_text=user_text, detail=detail)
+        parts = [{"text": user}]
+        if send_img:
+            parts.append({"inline_data": {"mime_type": media_type, "data": image_b64}})
+        return {
+            "system_instruction": {"parts": [{"text": _system_prompt(persona, styled)}]},
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"maxOutputTokens": max_tokens},
+        }
+
+    def interpret(self, persona, mode, ocr_text, image_b64, media_type, parent_context,
+                  user_text="", model=None, max_tokens=2000, include_image=True, detail=None,
+                  styled=True):
+        import httpx
+        mdl = self.model_for(model)
+        p = self._payload(persona, mode, ocr_text, image_b64, media_type, parent_context,
+                          user_text, max_tokens, include_image, detail, styled=styled)
+        with httpx.Client(timeout=60) as c:
+            r = c.post(self._url(mdl, False), headers=self._headers(), json=p)
+            r.raise_for_status()
+            cands = r.json().get("candidates", [])
+            if not cands:
+                return ""
+            parts = cands[0].get("content", {}).get("parts", [])
+            return "".join(pt.get("text", "") for pt in parts)
+
+    def stream_interpret(self, persona, mode, ocr_text, image_b64, media_type,
+                         parent_context, user_text="", model=None, max_tokens=2000,
+                         include_image=True, detail=None, styled=True):
+        import json as _json
+        import httpx
+        mdl = self.model_for(model)
+        p = self._payload(persona, mode, ocr_text, image_b64, media_type, parent_context,
+                          user_text, max_tokens, include_image, detail, styled=styled)
+        with httpx.Client(timeout=120) as c:
+            with c.stream("POST", self._url(mdl, True), headers=self._headers(), json=p) as r:
+                r.raise_for_status()
+                for line in r.iter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
+                    try:
+                        ev = _json.loads(line[6:])
+                    except Exception:
+                        continue
+                    for cand in ev.get("candidates", []):
+                        for pt in cand.get("content", {}).get("parts", []):
+                            t = pt.get("text", "")
+                            if t:
+                                yield t
+
+
 def text_complete(system: str, user: str, max_tokens: int = 700):
     """텍스트 전용 완성(요약 등, 이미지 없음). 가용 키로 가벼운 모델 사용.
     우선순위: Anthropic Haiku → OpenAI mini → 구독(claude -p). (text, model) 반환."""
@@ -283,12 +372,29 @@ def text_complete(system: str, user: str, max_tokens: int = 700):
                        timeout=60)
         r.raise_for_status()
         return r.json()["choices"][0]["message"]["content"], OPENAI_MODEL
+    gk = os.environ.get("GEMINI_API_KEY", "")
+    if gk:
+        r = httpx.post(f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+                       headers={"x-goog-api-key": gk, "content-type": "application/json"},
+                       json={"system_instruction": {"parts": [{"text": system}]},
+                             "contents": [{"role": "user", "parts": [{"text": user}]}],
+                             "generationConfig": {"maxOutputTokens": max_tokens}}, timeout=60)
+        r.raise_for_status()
+        cands = r.json().get("candidates", [])
+        text = "".join(pt.get("text", "") for pt in cands[0].get("content", {}).get("parts", [])) if cands else ""
+        return text, GEMINI_MODEL
     sub = SubscriptionBackend()
     return sub._client.complete(system, [Message("user", user)], max_tokens=max_tokens), MODEL
 
 
 _backend: Optional[AIBackend] = None
 _named: dict = {}
+
+
+def _has(env_name: str) -> bool:
+    """키가 있고 템플릿 플레이스홀더(...여기에...)가 아니면 True."""
+    v = os.environ.get(env_name, "").strip()
+    return bool(v) and "여기에" not in v
 
 
 def get_backend_for(choice: str) -> AIBackend:
@@ -309,6 +415,11 @@ def get_backend_for(choice: str) -> AIBackend:
         if not key:
             raise RuntimeError("provider=openai 인데 OPENAI_API_KEY가 없습니다.")
         be = OpenAIBackend(key)
+    elif c == "gemini":
+        key = os.environ.get("GEMINI_API_KEY", "")
+        if not key:
+            raise RuntimeError("provider=gemini 인데 GEMINI_API_KEY가 없습니다.")
+        be = GeminiBackend(key)
     elif c == "subscription":
         be = SubscriptionBackend()
     else:
@@ -321,19 +432,39 @@ def pick_backend(persona: str) -> AIBackend:
     """SERVER_AI_BACKEND=auto 일 때 페르소나로 모델 라우팅(벤치 근거):
       • F형(감정형) → Claude(Haiku): 페르소나 재현 우위(특히 ENFP/ENFJ)
       • T형(사고형) → GPT mini: 페르소나 동급/근소, 속도 우위
-    두 키 모두 필요. auto 가 아니면 기본 단일 백엔드(get_backend)."""
+    가진 키에 맞춰 폴백: 선호 프로바이더 키가 없으면 → 다른 유료 키 → Gemini(무료) → subscription.
+    auto 가 아니면 기본 단일 백엔드(get_backend)."""
     if os.environ.get("SERVER_AI_BACKEND", "subscription").lower() != "auto":
         return get_backend()
     is_feeling = len(persona) >= 3 and persona[2].upper() == "F"
-    return get_backend_for("anthropic" if is_feeling else "openai")
+    # 선호: F형→anthropic, T형→openai. 그 키가 있으면 그대로.
+    if is_feeling and _has("ANTHROPIC_API_KEY"):
+        return get_backend_for("anthropic")
+    if not is_feeling and _has("OPENAI_API_KEY"):
+        return get_backend_for("openai")
+    # 선호 키 없음 → 가진 유료 키(상대 프로바이더) → Gemini → subscription 순으로 폴백.
+    if _has("ANTHROPIC_API_KEY"):
+        return get_backend_for("anthropic")
+    if _has("OPENAI_API_KEY"):
+        return get_backend_for("openai")
+    if _has("GEMINI_API_KEY"):
+        return get_backend_for("gemini")
+    return get_backend_for("subscription")
 
 
 def get_backend() -> AIBackend:
     global _backend
     if _backend is None:
         choice = os.environ.get("SERVER_AI_BACKEND", "subscription").lower()
-        if choice == "auto":              # auto는 요청별 라우팅 → 기본 단일은 anthropic로(두 키 필요)
-            choice = "api"
+        if choice == "auto":              # auto 단일 기본: 가진 키 우선순위 anthropic→openai→gemini→subscription
+            if _has("ANTHROPIC_API_KEY"):
+                choice = "api"
+            elif _has("OPENAI_API_KEY"):
+                choice = "openai"
+            elif _has("GEMINI_API_KEY"):
+                choice = "gemini"
+            else:
+                choice = "subscription"
         if choice == "api":
             key = os.environ.get("ANTHROPIC_API_KEY", "")
             if not key:
@@ -344,6 +475,11 @@ def get_backend() -> AIBackend:
             if not key:
                 raise RuntimeError("SERVER_AI_BACKEND=openai 인데 OPENAI_API_KEY가 없습니다.")
             _backend = OpenAIBackend(key)
+        elif choice == "gemini":
+            key = os.environ.get("GEMINI_API_KEY", "")
+            if not key:
+                raise RuntimeError("SERVER_AI_BACKEND=gemini 인데 GEMINI_API_KEY가 없습니다.")
+            _backend = GeminiBackend(key)
         else:
             _backend = SubscriptionBackend()
     return _backend
